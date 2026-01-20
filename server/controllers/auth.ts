@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { USER_SIGNUP_DATA } from "@app-types/auth";
 import supabase from "@config/supabase";
+import { CookieOptions } from "express";
+
 
 export const userSignup = async (req: Request, res: Response) => {
   try {
@@ -41,9 +43,10 @@ export const userSignup = async (req: Request, res: Response) => {
   }
 };
 
-export const userLogin = async (req: Request, res: Response) => {
+
+export const userLogin = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const {email, password} = req.body as {email: string, password: string};
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -54,18 +57,27 @@ export const userLogin = async (req: Request, res: Response) => {
       password,
     });
 
-    if (error) {
-      return res.status(400).json({ message: error.message });
+    if (error || !data.session || !data.user) {
+      return res.status(401).json({ message: error?.message || "Invalid credentials" });
     }
+
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: data.session.expires_in * 1000,
+      path: "/",
+    };
+
+    res.cookie("access_token", data.session.access_token, cookieOptions);
 
     return res.status(200).json({
       message: "User logged in successfully",
-      user: data.user
+      user: data.user,
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({ message: "Internal server error" });
   }
-}
-  
+};
