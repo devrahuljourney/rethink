@@ -4,10 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import AppScreen from '../../screen/HomePage/AppScreen'
 
 export default function AppStack() {
-    const stack = createNativeStackNavigator()
+    const Stack = createNativeStackNavigator()
   return (
-    <stack.Navigator>
-        <stack.Screen name="App" component={AppScreen} />
-    </stack.Navigator>
+    <Stack.Navigator>
+        <Stack.Screen name="App" options={{ headerShown: false }} component={AppScreen} />
+    </Stack.Navigator>
   )
 }

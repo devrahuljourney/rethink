@@ -4,10 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from '../../screen/HomePage/Home';
 
 export default function HomeStack() {
-    const stack = createNativeStackNavigator();
+    const Stack = createNativeStackNavigator();
     return (
-        <stack.Navigator>
-            <stack.Screen name="Home" component={Home} />
-        </stack.Navigator>
+        <Stack.Navigator>
+            <Stack.Screen name="Home" options={{ headerShown: false }} component={Home} />
+        </Stack.Navigator>
     )
 }

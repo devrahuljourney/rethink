@@ -1,24 +1,25 @@
-
-
-import { View, Text, StyleSheet } from 'react-native'
-import React from 'react'
-import Home from './screen/HomePage/Home'
+import React, { useEffect, useState } from 'react'
+import { NavigationContainer } from '@react-navigation/native';
+import AppNavigator from './navigation/AppNavigator';
+import { LOCAL_STORAGE } from './constant/localStorage';
+import { fetchLocalStorage } from './utils/fetch-local-storage';
 
 export default function App() {
+    const [isSplashScreen, setIsSplashScreen] = useState(false);
+
+    useEffect(() => {
+        const checkSplashScreen = async () => {
+            const value = await fetchLocalStorage(LOCAL_STORAGE.IS_SPLASH_SCREEN);
+            if (value) {
+                setIsSplashScreen(true);
+            }
+        };
+        checkSplashScreen();
+    }, []);
+
     return (
-        <View style={styles.container}>
-            <Home />
-        </View>
+        <NavigationContainer>
+            <AppNavigator />
+        </NavigationContainer>
     )
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        // justifyContent: 'center', // constraints layout
-        // alignItems: 'center', // constraints layout
-    },
-    text: {
-        fontSize: 24,
-    },
-})

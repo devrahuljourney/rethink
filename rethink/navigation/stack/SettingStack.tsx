@@ -5,10 +5,10 @@ import AppScreen from '../../screen/HomePage/AppScreen'
 import Setting from '../../screen/HomePage/Setting'
 
 export default function SettingStack() {
-    const stack = createNativeStackNavigator()
+    const Stack = createNativeStackNavigator()
   return (
-    <stack.Navigator>
-        <stack.Screen name="Setting" component={Setting} />
-    </stack.Navigator>
+    <Stack.Navigator>
+        <Stack.Screen name="Setting" options={{ headerShown: false }} component={Setting} />
+    </Stack.Navigator>
   )
 }
