@@ -6,6 +6,7 @@ export type HomeStackParamList = {
 
 export type AppStackParamList = {
     App: undefined;
+    AppDetails: { packageName: string };
 };
 
 export type SettingStackParamList = {

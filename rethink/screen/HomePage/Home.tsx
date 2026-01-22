@@ -17,20 +17,15 @@ import {
   showUsageAccessSettings,
 } from '@brighthustle/react-native-usage-stats-manager'
 import { color } from '../../constant/color'
-import FilterTabs, { FilterRange } from './components/FilterTabs'
+import FilterTabs from './components/FilterTabs'
 import UsageOverview from './components/UsageOverview'
 import UsageGraph from './components/UsageGraph'
-
-interface AppUsageStats {
-  packageName: string
-  totalTimeInForeground: number
-  lastTimeUsed: number
-  appLaunchCount: number
-  isSystem: boolean
-  appName?: string
-}
+import { AppUsageStats, FilterRange } from '../../types/usage'
+import { formatTime } from '../../utils/timeUtils'
+import { useNavigation } from '@react-navigation/native'
 
 export default function Home() {
+  const navigation = useNavigation<any>()
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
   const [usageData, setUsageData] = useState<AppUsageStats[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -38,80 +33,35 @@ export default function Home() {
   const [activeRange, setActiveRange] = useState<FilterRange>('DAILY')
 
   useEffect(() => {
-    console.log('[Home] mounted')
-    console.log('[Platform]', Platform.OS)
-
     if (Platform.OS !== 'android') {
-      console.log('[Error] Not Android')
       setError('Usage stats are only available on Android')
       return
     }
-
-    console.log('[Calling] checkPermission()')
     checkPermission()
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange)
-
-    return () => {
-      console.log('[Home] unmounted')
-      subscription.remove()
-    }
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkPermission()
+    })
+    return () => subscription.remove()
   }, [])
 
-  const handleAppStateChange = async (state: string) => {
-    console.log('[AppState]', state)
-    if (state === 'active') {
-      console.log('[AppState] app active → checking permission')
-      checkPermission()
-    }
-  }
-
   useEffect(() => {
-    if (hasPermission) {
-      fetchUsageStats()
-    }
+    if (hasPermission) fetchUsageStats()
   }, [activeRange, hasPermission])
 
   const checkPermission = async () => {
-    console.log('[checkPermission] started')
     try {
       const granted = await checkForPermission()
-      console.log('[checkPermission] result:', granted)
-
       setHasPermission(granted)
-
-      if (granted) {
-        console.log('[Permission] granted → fetching usage stats')
-        fetchUsageStats()
-      } else {
-        console.log('[Permission] NOT granted')
-      }
+      if (granted) fetchUsageStats()
     } catch (e) {
-      console.log('[checkPermission] error:', e)
       setError('Permission check failed')
     }
   }
 
-  const openPermissionSettings = () => {
-    console.log('[Action] openUsageAccessSettings')
-    showUsageAccessSettings('')
-  }
-
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor((ms / 1000) % 60)
-    const minutes = Math.floor((ms / (1000 * 60)) % 60)
-    const hours = Math.floor(ms / (1000 * 60 * 60))
-
-    const parts = []
-    if (hours > 0) parts.push(`${hours}h`)
-    if (minutes > 0) parts.push(`${minutes}m`)
-    if (parts.length === 0) return `${seconds}s`
-    return parts.join(' ')
-  }
+  const openPermissionSettings = () => showUsageAccessSettings('')
 
   const fetchUsageStats = async () => {
     setRefreshing(true)
-
     try {
       const endMilliseconds = Date.now()
       let startMilliseconds = endMilliseconds - 24 * 60 * 60 * 1000
@@ -122,67 +72,27 @@ export default function Home() {
         startMilliseconds = endMilliseconds - 30 * 24 * 60 * 60 * 1000
       }
 
-      const rawResult = await queryAndAggregateUsageStats(
-        startMilliseconds,
-        endMilliseconds
-      )
-
-      console.log('[fetchUsageStats] raw result:', rawResult)
-
-      // 🔥 CONVERT OBJECT → ARRAY
+      const rawResult = await queryAndAggregateUsageStats(startMilliseconds, endMilliseconds)
       const usageArray: AppUsageStats[] = Object.values(rawResult as any)
-
-      console.log('[fetchUsageStats] array:', usageArray)
-
       const filteredResult = usageArray
         .filter(app => app.totalTimeInForeground > 0 && !app.isSystem)
         .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground)
 
-      console.log('[fetchUsageStats] filtered:', filteredResult)
-
       setUsageData(filteredResult)
     } catch (e) {
-      console.error('[fetchUsageStats] error:', e)
       setError('Failed to fetch usage stats')
     } finally {
       setRefreshing(false)
     }
   }
 
-
-  const renderItem = ({ item }: { item: AppUsageStats }) => {
-    return (
-      <View style={styles.itemContainer}>
-        <View style={styles.itemIconContainer}>
-          <Text style={styles.itemIconText}>
-            {(item.appName || item.packageName.split('.').pop())?.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.itemInfo}>
-          <Text style={styles.packageName} numberOfLines={1}>
-            {item.appName || item.packageName.split('.').pop()}
-          </Text>
-          <View style={styles.itemSubInfo}>
-            <Ionicons name="repeat-outline" size={12} color={color.secondary} />
-            <Text style={styles.launchText}>{item.appLaunchCount || 0} launches</Text>
-          </View>
-        </View>
-        <View style={styles.itemStats}>
-          <Text style={styles.usageTime}>
-            {formatTime(item.totalTimeInForeground)}
-          </Text>
-        </View>
-      </View>
-    )
-  }
-
-  const renderHeader = () => {
+  const renderStats = () => {
     const totalMs = usageData.reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
     const totalLaunches = usageData.reduce((acc, curr) => acc + (curr.appLaunchCount || 0), 0);
     const mostUsed = usageData[0]?.packageName.split('.').pop() || 'None';
 
     return (
-      <View style={styles.listHeader}>
+      <View style={{ paddingBottom: 40 }}>
         <FilterTabs
           activeRange={activeRange}
           onRangeChange={(range) => setActiveRange(range)}
@@ -199,9 +109,15 @@ export default function Home() {
             usageTime: app.totalTimeInForeground
           }))} />
         )}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>App Details</Text>
-          <Text style={styles.sectionSubtitle}>{usageData.length} apps tracked</Text>
+
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.seeMoreButton}
+            onPress={() => navigation.navigate('AppStack')}
+          >
+            <Text style={styles.seeMoreText}>View Detailed App Usage</Text>
+            <Ionicons name="arrow-forward" size={18} color={color.primary} />
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -243,22 +159,12 @@ export default function Home() {
 
       {hasPermission && (
         <FlatList
-          data={usageData}
-          renderItem={renderItem}
-          keyExtractor={item => item.packageName}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.listContent}
+          data={[]}
+          renderItem={null}
+          ListHeaderComponent={renderStats}
           refreshing={refreshing}
           onRefresh={fetchUsageStats}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="analytics-outline" size={48} color="#333" />
-              <Text style={styles.emptyText}>
-                No usage data found for this period
-              </Text>
-            </View>
-          }
         />
       )}
     </SafeAreaView>
@@ -305,9 +211,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  listHeader: {
-    paddingBottom: 8,
-  },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
@@ -329,98 +232,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
   },
-  title: {
-    marginLeft: 12,
-    fontSize: 24,
-    color: color.white,
-    fontWeight: '700',
+  actionContainer: {
+    paddingHorizontal: 20,
+    marginTop: 8,
   },
-  listContent: {
-    paddingBottom: 40,
-  },
-  itemContainer: {
+  seeMoreButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#1E1E1E',
-    padding: 16,
+    paddingVertical: 16,
     borderRadius: 20,
-    marginHorizontal: 20,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#2A2A2A',
   },
-  itemIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  itemIconText: {
+  seeMoreText: {
     color: color.white,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemSubInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  packageName: {
-    fontSize: 16,
-    color: color.white,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  launchText: {
-    fontSize: 12,
-    color: color.secondary,
-    marginLeft: 4,
-  },
-  itemStats: {
-    marginLeft: 16,
-    alignItems: 'flex-end',
-  },
-  usageTime: {
-    fontSize: 17,
-    color: color.primary,
-    fontWeight: '800',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    marginTop: 60,
-  },
-  emptyText: {
-    color: color.secondary,
-    textAlign: 'center',
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: color.white,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  sectionSubtitle: {
-    color: color.secondary,
-    fontSize: 12,
-    fontWeight: '600',
+    marginRight: 8,
   },
   text: {
     color: color.secondary,
