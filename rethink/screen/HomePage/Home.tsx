@@ -1,13 +1,23 @@
-import { View, Text } from 'react-native'
+import { View, Text,StyleSheet } from 'react-native'
 import React from 'react'
 import Ionicons from 'react-native-vector-icons/Ionicons'
+import { color } from '../../constant/color'
 
 
 export default function Home() {
   return (
-    <View>
+    <View style={styles.container} >
       <Text>Home nn</Text>
-      <Ionicons name="home-outline" size={20} color="black" />
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: color.black,
+        color: color.white,
+    },
+})
