@@ -8,6 +8,8 @@ import UsageBarChart from './components/UsageBarChart';
 import InterventionToggle from './components/InterventionToggle';
 import { queryAndAggregateUsageStats } from '@brighthustle/react-native-usage-stats-manager';
 import { getStartOfDay, formatTime } from '../../utils/timeUtils';
+import InsightCard from './components/InsightCard';
+import LinearGradient from 'react-native-linear-gradient';
 
 const AppDetails = () => {
     const route = useRoute<any>();
@@ -43,7 +45,7 @@ const AppDetails = () => {
 
                 const dayIndex = date.getDay();
                 history.push({
-                    value: Math.round(usageMs / (1000 * 60)), // Minutes
+                    value: parseFloat((usageMs / (1000 * 60 * 60)).toFixed(1)), // Hours
                     label: labels[dayIndex]
                 });
 
@@ -72,9 +74,12 @@ const AppDetails = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.appHeader}>
-                    <View style={styles.iconPlaceholder}>
+                    <LinearGradient
+                        colors={[color.primary, '#6C47FF']}
+                        style={styles.iconPlaceholder}
+                    >
                         <Text style={styles.iconText}>{packageName.charAt(0).toUpperCase()}</Text>
-                    </View>
+                    </LinearGradient>
                     <View style={styles.appInfo}>
                         <Text style={styles.appName}>{packageName.split('.').pop()}</Text>
                         <Text style={styles.packageName} numberOfLines={1}>{packageName}</Text>
@@ -95,12 +100,43 @@ const AppDetails = () => {
 
                         <UsageBarChart
                             data={usageHistory}
-                            title="Weekly Usage (minutes)"
+                            title="Weekly Usage (hours)"
                         />
 
                         <InterventionToggle
                             isEnabled={isInterventionEnabled}
                             onToggle={(val) => setIsInterventionEnabled(val)}
+                        />
+
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Premium Insights</Text>
+                            <View style={styles.premiumBadge}>
+                                <Text style={styles.premiumBadgeText}>PRO</Text>
+                            </View>
+                        </View>
+
+                        <InsightCard
+                            icon="flash-outline"
+                            title="Focus Score"
+                            value="82/100"
+                            subtitle="You use this app 15% less than average users."
+                            type="positive"
+                        />
+
+                        <InsightCard
+                            icon="time-outline"
+                            title="Peak Usage"
+                            value="8:00 PM - 10:00 PM"
+                            subtitle="Dopamine seeking behavior detected in evenings."
+                            type="neutral"
+                        />
+
+                        <InsightCard
+                            icon="trending-down-outline"
+                            title="Digital Fatigue"
+                            value="Low"
+                            subtitle="Usage is well distributed throughout the day."
+                            type="positive"
                         />
 
                         <View style={styles.tipCard}>
@@ -151,12 +187,14 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 24,
-        backgroundColor: '#1E1E1E',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+        elevation: 10,
+        shadowColor: color.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
     iconText: {
         color: color.white,
@@ -232,6 +270,33 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         flex: 1,
         lineHeight: 18,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        paddingHorizontal: 24,
+        marginTop: 24,
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        color: color.white,
+        fontSize: 18,
+        fontWeight: '700',
+        marginRight: 8,
+    },
+    premiumBadge: {
+        backgroundColor: 'rgba(167, 139, 255, 0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(167, 139, 255, 0.4)',
+    },
+    premiumBadgeText: {
+        color: '#A78BFF',
+        fontSize: 10,
+        fontWeight: '800',
     },
 });
 

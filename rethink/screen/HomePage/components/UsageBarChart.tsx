@@ -21,7 +21,7 @@ const UsageBarChart: React.FC<UsageBarChartProps> = ({ data, title }) => {
             <View style={styles.chartWrapper}>
                 <BarChart
                     data={data}
-                    barWidth={30}
+                    barWidth={24}
                     noOfSections={3}
                     barBorderRadius={6}
                     frontColor={color.primary}
@@ -32,10 +32,11 @@ const UsageBarChart: React.FC<UsageBarChartProps> = ({ data, title }) => {
                     hideRules
                     isAnimated
                     animationDuration={500}
-                    spacing={20}
+                    spacing={18}
                     backgroundColor="transparent"
                     height={150}
-                    width={Dimensions.get('window').width - 100}
+                    width={Dimensions.get('window').width - 120}
+                    formatYLabel={(label) => `${label}h`}
                 />
             </View>
         </View>
