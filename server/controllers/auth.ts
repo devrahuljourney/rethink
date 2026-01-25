@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import { USER_SIGNUP_DATA } from "@app-types/auth";
 import supabase from "@config/supabase";
 import { CookieOptions } from "express";
+import { User } from "@supabase/supabase-js";
+
+interface AuthenticatedRequest extends Request {
+  user?: User;
+}
 
 
 export const userSignup = async (req: Request, res: Response) => {
@@ -82,7 +87,7 @@ export const userLogin = async (req: Request, res: Response): Promise<Response> 
   }
 };
 
-export const logout = async (req: Request, res: Response): Promise<Response> => {
+export const logout = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -103,7 +108,7 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
   }
 };
 
-export const getProfile = async (req: Request, res: Response): Promise<Response> => {
+export const getProfile = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   const { user } = req;
 
   if (!user) {

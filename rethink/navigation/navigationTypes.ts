@@ -19,7 +19,13 @@ export type BottomTabParamList = {
     SettingStack: NavigatorScreenParams<SettingStackParamList> | undefined;
 };
 
+export type AuthStackParamList = {
+    Login: undefined;
+    Signup: undefined;
+};
+
 export type RootStackParamList = {
     Splash: undefined;
     MainTab: NavigatorScreenParams<BottomTabParamList> | undefined;
+    Auth: NavigatorScreenParams<AuthStackParamList> | undefined;
 };

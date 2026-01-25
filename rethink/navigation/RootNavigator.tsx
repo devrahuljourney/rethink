@@ -1,16 +1,14 @@
-import { View, Text } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import AppNavigator from './AppNavigator';
-import AuthNavigator from './AuthNavigator';
 import { NavigationContainer } from '@react-navigation/native';
+import { AuthProvider } from '../context/AuthContext';
 
 export default function RootNavigator() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    useEffect(() => {
-        setIsAuthenticated(true)
-    } , [])
-
-    return <NavigationContainer>
-        {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
-    </NavigationContainer>
+    return (
+        <AuthProvider>
+            <NavigationContainer>
+                <AppNavigator />
+            </NavigationContainer>
+        </AuthProvider>
+    )
 }

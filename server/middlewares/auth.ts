@@ -1,7 +1,12 @@
 import supabase from "@config/supabase";
 import { Request, Response, NextFunction } from "express";
+import { User } from "@supabase/supabase-js";
 
-export async function userAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+interface AuthenticatedRequest extends Request {
+    user?: User;
+}
+
+export async function userAuthMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     if (!req.cookies) {
         return res.status(401).json({ message: 'No cookies found in request' });
     }
@@ -13,7 +18,7 @@ export async function userAuthMiddleware(req: Request, res: Response, next: Next
     }
 
     try {
-        const { data, error } = await supabase.auth.getUser(token); 
+        const { data, error } = await supabase.auth.getUser(token);
         if (error || !data.user) {
             return res.status(401).json({ message: 'You are not authenticated! Please log in.' });
         }
