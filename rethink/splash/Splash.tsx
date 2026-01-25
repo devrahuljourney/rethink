@@ -29,7 +29,7 @@ export default function Splash() {
 
                 <Image
                     style={styles.image}
-                    source={require('../assets/1.png')}
+                    source={require('../assets/1.jpg')}
                 />
             </View>
 

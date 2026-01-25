@@ -1,13 +1,61 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { color } from '../../constant/color';
+import UsageBarChart from './components/UsageBarChart';
+import InterventionToggle from './components/InterventionToggle';
+import { queryAndAggregateUsageStats } from '@brighthustle/react-native-usage-stats-manager';
+import { getStartOfDay, formatTime } from '../../utils/timeUtils';
 
 const AppDetails = () => {
     const route = useRoute<any>();
     const navigation = useNavigation();
     const { packageName } = route.params;
+
+    const [isInterventionEnabled, setIsInterventionEnabled] = useState(false);
+    const [usageHistory, setUsageHistory] = useState<{ value: number; label: string }[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [todayUsage, setTodayUsage] = useState<number>(0);
+
+    useEffect(() => {
+        fetchHistory();
+    }, [packageName]);
+
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const history = [];
+            const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+
+            // We'll fetch for the last 7 days
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(today.getDate() - i);
+                const start = getStartOfDay(date);
+                const end = i === 0 ? Date.now() : start + 24 * 60 * 60 * 1000 - 1;
+
+                const stats = await queryAndAggregateUsageStats(start, end);
+                const appStats = (stats as any)[packageName];
+                const usageMs = appStats ? appStats.totalTimeInForeground : 0;
+
+                const dayIndex = date.getDay();
+                history.push({
+                    value: Math.round(usageMs / (1000 * 60)), // Minutes
+                    label: labels[dayIndex]
+                });
+
+                if (i === 0) setTodayUsage(usageMs);
+            }
+            setUsageHistory(history);
+        } catch (error) {
+            console.error('Failed to fetch app history:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -18,17 +66,52 @@ const AppDetails = () => {
                 <Text style={styles.title}>App Details</Text>
             </View>
 
-            <View style={styles.content}>
-                <View style={styles.iconPlaceholder}>
-                    <Text style={styles.iconText}>{packageName.charAt(0).toUpperCase()}</Text>
+            <ScrollView
+                style={styles.content}
+                contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.appHeader}>
+                    <View style={styles.iconPlaceholder}>
+                        <Text style={styles.iconText}>{packageName.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.appInfo}>
+                        <Text style={styles.appName}>{packageName.split('.').pop()}</Text>
+                        <Text style={styles.packageName} numberOfLines={1}>{packageName}</Text>
+                    </View>
                 </View>
-                <Text style={styles.appName}>{packageName.split('.').pop()}</Text>
-                <Text style={styles.packageName}>{packageName}</Text>
 
-                <View style={styles.placeholderCard}>
-                    <Text style={styles.placeholderText}>Detailed insights for this app coming soon...</Text>
-                </View>
-            </View>
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator color={color.primary} size="large" />
+                        <Text style={styles.loadingText}>Analyzing usage patterns...</Text>
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.todayStats}>
+                            <Text style={styles.statLabel}>Today's Usage</Text>
+                            <Text style={styles.statValue}>{formatTime(todayUsage)}</Text>
+                        </View>
+
+                        <UsageBarChart
+                            data={usageHistory}
+                            title="Weekly Usage (minutes)"
+                        />
+
+                        <InterventionToggle
+                            isEnabled={isInterventionEnabled}
+                            onToggle={(val) => setIsInterventionEnabled(val)}
+                        />
+
+                        <View style={styles.tipCard}>
+                            <Ionicons name="bulb-outline" size={24} color={color.primary} />
+                            <Text style={styles.tipText}>
+                                Enabling Smart Intervention helps you stay mindful of your digital wellbeing.
+                            </Text>
+                        </View>
+                    </>
+                )}
+            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -59,6 +142,8 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+    },
+    contentContainer: {
         alignItems: 'center',
         paddingTop: 40,
     },
@@ -89,21 +174,64 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 4,
     },
-    placeholderCard: {
-        marginTop: 40,
+    appHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingBottom: 24,
+    },
+    appInfo: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    loadingContainer: {
+        padding: 60,
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: color.secondary,
+        marginTop: 16,
+        fontSize: 14,
+    },
+    todayStats: {
         marginHorizontal: 24,
+        marginBottom: 24,
         backgroundColor: '#1E1E1E',
         padding: 24,
         borderRadius: 24,
         borderWidth: 1,
         borderColor: '#2A2A2A',
-        width: '80%',
         alignItems: 'center',
     },
-    placeholderText: {
+    statLabel: {
         color: color.secondary,
-        textAlign: 'center',
         fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    statValue: {
+        color: color.white,
+        fontSize: 32,
+        fontWeight: '800',
+    },
+    tipCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 24,
+        marginTop: 8,
+        marginBottom: 40,
+        backgroundColor: 'rgba(52, 199, 89, 0.05)',
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(52, 199, 89, 0.1)',
+    },
+    tipText: {
+        color: color.secondary,
+        fontSize: 13,
+        marginLeft: 12,
+        flex: 1,
+        lineHeight: 18,
     },
 });
 

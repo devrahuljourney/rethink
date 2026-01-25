@@ -9,3 +9,9 @@ export const formatTime = (ms: number) => {
     if (parts.length === 0) return `${seconds}s`;
     return parts.join(' ');
 };
+
+export const getStartOfDay = (date: Date = new Date()) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+};

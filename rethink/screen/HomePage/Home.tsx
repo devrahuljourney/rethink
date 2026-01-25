@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   AppState,
   FlatList,
-  SafeAreaView,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import {
   EventFrequency,
@@ -20,8 +20,9 @@ import { color } from '../../constant/color'
 import FilterTabs from './components/FilterTabs'
 import UsageOverview from './components/UsageOverview'
 import UsageGraph from './components/UsageGraph'
+import LaunchGraph from './components/LaunchGraph'
 import { AppUsageStats, FilterRange } from '../../types/usage'
-import { formatTime } from '../../utils/timeUtils'
+import { formatTime, getStartOfDay } from '../../utils/timeUtils'
 import { useNavigation } from '@react-navigation/native'
 
 export default function Home() {
@@ -64,12 +65,13 @@ export default function Home() {
     setRefreshing(true)
     try {
       const endMilliseconds = Date.now()
-      let startMilliseconds = endMilliseconds - 24 * 60 * 60 * 1000
+      const todayStart = getStartOfDay()
+      let startMilliseconds = todayStart
 
       if (activeRange === 'WEEKLY') {
-        startMilliseconds = endMilliseconds - 7 * 24 * 60 * 60 * 1000
+        startMilliseconds = todayStart - 6 * 24 * 60 * 60 * 1000
       } else if (activeRange === 'MONTHLY') {
-        startMilliseconds = endMilliseconds - 30 * 24 * 60 * 60 * 1000
+        startMilliseconds = todayStart - 29 * 24 * 60 * 60 * 1000
       }
 
       const rawResult = await queryAndAggregateUsageStats(startMilliseconds, endMilliseconds)
@@ -102,12 +104,23 @@ export default function Home() {
           mostUsedApp={mostUsed}
           mostLaunches={usageData.sort((a, b) => (b.appLaunchCount || 0) - (a.appLaunchCount || 0))[0]?.packageName.split('.').pop() || 'None'}
           launches={totalLaunches}
+          activeRange={activeRange}
+          avgUsage={activeRange === 'WEEKLY' ? formatTime(totalMs / 7) : activeRange === 'MONTHLY' ? formatTime(totalMs / 30) : undefined}
         />
         {usageData.length > 0 && (
-          <UsageGraph data={usageData.map(app => ({
-            name: app.packageName,
-            usageTime: app.totalTimeInForeground
-          }))} />
+          <>
+            <UsageGraph data={usageData.map(app => ({
+              name: app.packageName,
+              usageTime: app.totalTimeInForeground
+            }))} />
+            <LaunchGraph data={usageData
+              .filter(app => (app.appLaunchCount || 0) > 0)
+              .sort((a, b) => (b.appLaunchCount || 0) - (a.appLaunchCount || 0))
+              .map(app => ({
+                name: app.packageName,
+                launches: app.appLaunchCount || 0
+              }))} />
+          </>
         )}
 
         <View style={styles.actionContainer}>

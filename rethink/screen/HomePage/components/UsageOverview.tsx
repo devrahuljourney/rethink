@@ -8,6 +8,8 @@ interface UsageOverviewProps {
     mostUsedApp: string;
     mostLaunches: string;
     launches: number;
+    avgUsage?: string;
+    activeRange: string;
 }
 
 const { width } = Dimensions.get('window');
@@ -16,7 +18,9 @@ const UsageOverview: React.FC<UsageOverviewProps> = ({
     totalUsage,
     mostUsedApp,
     mostLaunches,
-    launches
+    launches,
+    avgUsage,
+    activeRange
 }) => {
     return (
         <View style={styles.container}>
@@ -26,10 +30,16 @@ const UsageOverview: React.FC<UsageOverviewProps> = ({
                     <Text style={styles.heroLabel}>Total Usage Time</Text>
                     <View style={styles.liveIndicator}>
                         <View style={styles.liveDot} />
-                        <Text style={styles.liveText}>Today</Text>
+                        <Text style={styles.liveText}>{activeRange === 'DAILY' ? 'Today' : activeRange === 'WEEKLY' ? 'This Week' : 'This Month'}</Text>
                     </View>
                 </View>
                 <Text style={styles.heroValue}>{totalUsage}</Text>
+                {avgUsage && activeRange !== 'DAILY' && (
+                    <View style={styles.avgContainer}>
+                        <Ionicons name="stats-chart" size={14} color={color.primary} />
+                        <Text style={styles.avgText}>Avg: {avgUsage} / day</Text>
+                    </View>
+                )}
                 <View style={styles.heroFooter}>
                     <Ionicons name="trending-up" size={16} color={color.primary} />
                     <Text style={styles.heroSubtext}>Tracking active app sessions</Text>
@@ -120,6 +130,22 @@ const styles = StyleSheet.create({
     heroSubtext: {
         color: color.secondary,
         fontSize: 13,
+        marginLeft: 6,
+    },
+    avgContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        backgroundColor: 'rgba(52, 199, 89, 0.05)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    avgText: {
+        color: color.primary,
+        fontSize: 13,
+        fontWeight: '600',
         marginLeft: 6,
     },
     statsGrid: {
