@@ -38,6 +38,7 @@ export const userSignup = async (req: Request, res: Response) => {
     }
 
     return res.status(201).json({
+      success: true,
       message: "User registered successfully",
       user: data.user
     });
@@ -77,6 +78,7 @@ export const userLogin = async (req: Request, res: Response): Promise<Response> 
     res.cookie("access_token", data.session.access_token, cookieOptions);
 
     return res.status(200).json({
+      success: true,
       message: "User logged in successfully",
       user: data.user,
     });
@@ -100,6 +102,7 @@ export const logout = async (req: AuthenticatedRequest, res: Response): Promise<
       path: '/',
     });
     return res.status(200).json({
+      success: true,
       message: "User logged out successfully",
     });
   } catch (error) {
@@ -116,6 +119,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
   }
 
   return res.status(200).json({
+    success: true,
     message: "User profile retrieved successfully",
     user: user.user_metadata,
     id: user.id,
