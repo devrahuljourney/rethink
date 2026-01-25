@@ -21,10 +21,10 @@ export const userSignup = async (req: Request, res: Response) => {
       email,
       password,
       options: {
-        data:{
+        data: {
           name,
           mobile_number,
-          }
+        }
       }
     });
 
@@ -80,4 +80,39 @@ export const userLogin = async (req: Request, res: Response): Promise<Response> 
     console.error(err);
     return res.status(500).json({ message: "Internal server error" });
   }
+};
+
+export const logout = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+    return res.status(200).json({
+      message: "User logged out successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getProfile = async (req: Request, res: Response): Promise<Response> => {
+  const { user } = req;
+
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  return res.status(200).json({
+    message: "User profile retrieved successfully",
+    user: user.user_metadata,
+    id: user.id,
+  });
 };
