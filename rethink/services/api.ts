@@ -1,4 +1,4 @@
-const IP = "10.172.66.191";
+const IP = "10.146.241.191";
 
 const BASE_URL = `http://${IP}:4000/api/v1/`;
 

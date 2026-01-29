@@ -13,14 +13,9 @@ export default function AppNavigator() {
 
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {isLoading ? (
-                <Stack.Screen name="Splash" component={Splash} />
-            ) : (
-                <>
-                    <Stack.Screen name="MainTab" component={BottomTabNav} />
-                    <Stack.Screen name="Auth" component={AuthNavigator} />
-                </>
-            )}
+            <Stack.Screen name="Splash" component={Splash} />
+            <Stack.Screen name="MainTab" component={BottomTabNav} />
+            <Stack.Screen name="Auth" component={AuthNavigator} />
         </Stack.Navigator>
     )
 }

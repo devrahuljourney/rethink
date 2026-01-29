@@ -40,7 +40,7 @@ export default function Splash() {
                     <View style={styles.line} />
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigation.navigate('MainTab', { screen: 'HomeStack' })} style={styles.button}>
+                <TouchableOpacity onPress={() => navigation.replace('MainTab')} style={styles.button}>
 
                     <Text style={styles.buttonText}>Next</Text>
                 </TouchableOpacity>
