@@ -10,5 +10,6 @@ console.log('Index.js: Starting application registration');
 console.log('Index.js: App Name is:', appName);
 
 AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerHeadlessTask('AppMonitorTask', () => require('./services/AppMonitorTask').default);
 
 console.log('Index.js: Component registered');

@@ -1,22 +1,61 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch } from 'react-native';
+import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { color } from '../../../constant/color';
+import { useIntervention } from '../../../context/InterventionContext';
+import PermissionManager from '../../../utils/PermissionManager';
 
 interface InterventionToggleProps {
-    isEnabled: boolean;
-    onToggle: (value: boolean) => void;
+    // These might be kept if the parent still wants to track it, 
+    // but we'll primary use the context now.
+    isEnabled?: boolean;
+    onToggle?: (value: boolean) => void;
 }
 
-const InterventionToggle: React.FC<InterventionToggleProps> = ({ isEnabled, onToggle }) => {
+const InterventionToggle: React.FC<InterventionToggleProps> = () => {
+    const { isInterventionEnabled, setIsInterventionEnabled } = useIntervention();
+
+    const handleToggle = async (value: boolean) => {
+        if (value) {
+            // Check permissions before enabling
+            const hasAccessibility = await PermissionManager.checkAccessibilityPermission();
+            if (!hasAccessibility) {
+                Alert.alert(
+                    'Accessibility Permission Required',
+                    'Rethink needs accessibility permission to detect when you open certain apps.',
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Settings', onPress: () => PermissionManager.requestAccessibilityPermission() }
+                    ]
+                );
+                return;
+            }
+
+            const hasOverlay = await PermissionManager.checkOverlayPermission();
+            if (!hasOverlay) {
+                Alert.alert(
+                    'Overlay Permission Required',
+                    'Rethink needs permission to display the intervention screen over other apps.',
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Settings', onPress: () => PermissionManager.requestOverlayPermission() }
+                    ]
+                );
+                return;
+            }
+        }
+
+        setIsInterventionEnabled(value);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.leftContent}>
-                <View style={[styles.iconContainer, { backgroundColor: isEnabled ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 255, 255, 0.05)' }]}>
+                <View style={[styles.iconContainer, { backgroundColor: isInterventionEnabled ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 255, 255, 0.05)' }]}>
                     <Ionicons
-                        name={isEnabled ? "shield-checkmark-outline" : "shield-outline"}
+                        name={isInterventionEnabled ? "shield-checkmark-outline" : "shield-outline"}
                         size={22}
-                        color={isEnabled ? "#34C759" : color.secondary}
+                        color={isInterventionEnabled ? "#34C759" : color.secondary}
                     />
                 </View>
                 <View style={styles.textContainer}>
@@ -26,10 +65,10 @@ const InterventionToggle: React.FC<InterventionToggleProps> = ({ isEnabled, onTo
             </View>
             <Switch
                 trackColor={{ false: '#333', true: 'rgba(52, 199, 89, 0.4)' }}
-                thumbColor={isEnabled ? '#34C759' : '#999'}
+                thumbColor={isInterventionEnabled ? '#34C759' : '#999'}
                 ios_backgroundColor="#333"
-                onValueChange={onToggle}
-                value={isEnabled}
+                onValueChange={handleToggle}
+                value={isInterventionEnabled}
             />
         </View>
     );
