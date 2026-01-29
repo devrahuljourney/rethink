@@ -34,10 +34,16 @@ const UsageOverview: React.FC<UsageOverviewProps> = ({
                     </View>
                 </View>
                 <Text style={styles.heroValue}>{totalUsage}</Text>
-                {avgUsage && activeRange !== 'DAILY' && (
-                    <View style={styles.avgContainer}>
-                        <Ionicons name="stats-chart" size={14} color={color.primary} />
-                        <Text style={styles.avgText}>Avg: {avgUsage} / day</Text>
+                {avgUsage && (
+                    <View style={[styles.avgContainer, { backgroundColor: avgUsage.includes('Down') ? 'rgba(52, 199, 89, 0.05)' : avgUsage.includes('Up') ? 'rgba(255, 82, 82, 0.05)' : 'rgba(255, 255, 255, 0.05)' }]}>
+                        <Ionicons
+                            name={avgUsage.includes('Down') ? "trending-down" : avgUsage.includes('Up') ? "trending-up" : "remove-outline"}
+                            size={14}
+                            color={avgUsage.includes('Down') ? "#34C759" : avgUsage.includes('Up') ? "#FF5252" : color.secondary}
+                        />
+                        <Text style={[styles.avgText, { color: avgUsage.includes('Down') ? "#34C759" : avgUsage.includes('Up') ? "#FF5252" : color.secondary }]}>
+                            {avgUsage}
+                        </Text>
                     </View>
                 )}
                 <View style={styles.heroFooter}>

@@ -15,3 +15,16 @@ export const getStartOfDay = (date: Date = new Date()) => {
     d.setHours(0, 0, 0, 0);
     return d.getTime();
 };
+
+export const getPreviousDayStart = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+};
+
+export const getPreviousDayEnd = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() - 1;
+};

@@ -118,9 +118,9 @@ const AppDetails = () => {
                         <InsightCard
                             icon="flash-outline"
                             title="Focus Score"
-                            value="82/100"
-                            subtitle="You use this app 15% less than average users."
-                            type="positive"
+                            value={todayUsage > 1000 * 60 * 60 ? "32/100" : "82/100"}
+                            subtitle={todayUsage > 1000 * 60 * 60 ? "Heavy usage detected. Take a break!" : "Great job staying focused today!"}
+                            type={todayUsage > 1000 * 60 * 60 ? "negative" : "positive"}
                         />
 
                         <InsightCard

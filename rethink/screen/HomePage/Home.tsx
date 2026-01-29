@@ -1,97 +1,53 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import {
   View,
   Text,
   StyleSheet,
-  Platform,
   TouchableOpacity,
-  AppState,
   FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import {
-  EventFrequency,
-  checkForPermission,
-  queryAndAggregateUsageStats,
-  showUsageAccessSettings,
-} from '@brighthustle/react-native-usage-stats-manager'
+import { showUsageAccessSettings } from '@brighthustle/react-native-usage-stats-manager'
 import { color } from '../../constant/color'
 import FilterTabs from './components/FilterTabs'
 import UsageOverview from './components/UsageOverview'
 import UsageGraph from './components/UsageGraph'
 import LaunchGraph from './components/LaunchGraph'
-import { AppUsageStats, FilterRange } from '../../types/usage'
-import { formatTime, getStartOfDay } from '../../utils/timeUtils'
+import { formatTime } from '../../utils/timeUtils'
 import { useNavigation } from '@react-navigation/native'
+import { useUsage } from '../../context/UsageContext'
 
 export default function Home() {
   const navigation = useNavigation<any>()
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
-  const [usageData, setUsageData] = useState<AppUsageStats[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [activeRange, setActiveRange] = useState<FilterRange>('DAILY')
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') {
-      setError('Usage stats are only available on Android')
-      return
-    }
-    checkPermission()
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkPermission()
-    })
-    return () => subscription.remove()
-  }, [])
-
-  useEffect(() => {
-    if (hasPermission) fetchUsageStats()
-  }, [activeRange, hasPermission])
-
-  const checkPermission = async () => {
-    try {
-      const granted = await checkForPermission()
-      setHasPermission(granted)
-      if (granted) fetchUsageStats()
-    } catch (e) {
-      setError('Permission check failed')
-    }
-  }
+  const {
+    usageData,
+    activeRange,
+    setActiveRange,
+    refreshUsage,
+    isLoading,
+    hasPermission,
+    totalTodayMs,
+    todayLauches,
+    usageComparison
+  } = useUsage();
 
   const openPermissionSettings = () => showUsageAccessSettings('')
 
-  const fetchUsageStats = async () => {
-    setRefreshing(true)
-    try {
-      const endMilliseconds = Date.now()
-      const todayStart = getStartOfDay()
-      let startMilliseconds = todayStart
-
-      if (activeRange === 'WEEKLY') {
-        startMilliseconds = todayStart - 6 * 24 * 60 * 60 * 1000
-      } else if (activeRange === 'MONTHLY') {
-        startMilliseconds = todayStart - 29 * 24 * 60 * 60 * 1000
-      }
-
-      const rawResult = await queryAndAggregateUsageStats(startMilliseconds, endMilliseconds)
-      const usageArray: AppUsageStats[] = Object.values(rawResult as any)
-      const filteredResult = usageArray
-        .filter(app => app.totalTimeInForeground > 0 && !app.isSystem)
-        .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground)
-
-      setUsageData(filteredResult)
-    } catch (e) {
-      setError('Failed to fetch usage stats')
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
   const renderStats = () => {
-    const totalMs = usageData.reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
-    const totalLaunches = usageData.reduce((acc, curr) => acc + (curr.appLaunchCount || 0), 0);
     const mostUsed = usageData[0]?.packageName.split('.').pop() || 'None';
+
+    let comparisonText = '';
+    if (activeRange === 'DAILY') {
+      comparisonText = usageComparison > 0
+        ? `Up ${usageComparison.toFixed(1)}% from yesterday`
+        : usageComparison < 0
+          ? `Down ${Math.abs(usageComparison).toFixed(1)}% from yesterday`
+          : 'Same as yesterday';
+    } else {
+      const days = activeRange === 'WEEKLY' ? 7 : 30;
+      comparisonText = `Avg: ${formatTime(totalTodayMs / days)} / day`;
+    }
 
     return (
       <View style={{ paddingBottom: 40 }}>
@@ -100,24 +56,25 @@ export default function Home() {
           onRangeChange={(range) => setActiveRange(range)}
         />
         <UsageOverview
-          totalUsage={formatTime(totalMs)}
+          totalUsage={formatTime(totalTodayMs)}
           mostUsedApp={mostUsed}
           mostLaunches={usageData.sort((a, b) => (b.appLaunchCount || 0) - (a.appLaunchCount || 0))[0]?.packageName.split('.').pop() || 'None'}
-          launches={totalLaunches}
+          launches={todayLauches}
           activeRange={activeRange}
-          avgUsage={activeRange === 'WEEKLY' ? formatTime(totalMs / 7) : activeRange === 'MONTHLY' ? formatTime(totalMs / 30) : undefined}
+          avgUsage={comparisonText}
         />
         {usageData.length > 0 && (
           <>
-            <UsageGraph data={usageData.map(app => ({
-              name: app.packageName,
+            <UsageGraph data={usageData.slice(0, 5).map(app => ({
+              name: app.appName || app.packageName.split('.').pop() || 'Unknown',
               usageTime: app.totalTimeInForeground
             }))} />
             <LaunchGraph data={usageData
               .filter(app => (app.appLaunchCount || 0) > 0)
               .sort((a, b) => (b.appLaunchCount || 0) - (a.appLaunchCount || 0))
+              .slice(0, 5)
               .map(app => ({
-                name: app.packageName,
+                name: app.packageName.split('.').pop() || 'Unknown',
                 launches: app.appLaunchCount || 0
               }))} />
           </>
@@ -145,14 +102,12 @@ export default function Home() {
         </View>
         <TouchableOpacity
           style={styles.headerAction}
-          onPress={fetchUsageStats}
+          onPress={refreshUsage}
           activeOpacity={0.7}
         >
           <Ionicons name="refresh-outline" size={24} color={color.white} />
         </TouchableOpacity>
       </View>
-
-      {error && <View style={styles.errorContainer}><Text style={styles.error}>{error}</Text></View>}
 
       {hasPermission === false && (
         <View style={styles.centerContent}>
@@ -175,8 +130,8 @@ export default function Home() {
           data={[]}
           renderItem={null}
           ListHeaderComponent={renderStats}
-          refreshing={refreshing}
-          onRefresh={fetchUsageStats}
+          refreshing={isLoading}
+          onRefresh={refreshUsage}
           showsVerticalScrollIndicator={false}
         />
       )}

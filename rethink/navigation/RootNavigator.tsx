@@ -3,6 +3,7 @@ import AppNavigator from './AppNavigator';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from '../context/AuthContext';
 import { InterventionProvider, useIntervention } from '../context/InterventionContext';
+import { UsageProvider } from '../context/UsageContext';
 import InterventionOverlay from '../screen/Intervention/InterventionOverlay';
 
 function RootNavigatorContent() {
@@ -20,7 +21,9 @@ export default function RootNavigator() {
     return (
         <AuthProvider>
             <InterventionProvider>
-                <RootNavigatorContent />
+                <UsageProvider>
+                    <RootNavigatorContent />
+                </UsageProvider>
             </InterventionProvider>
         </AuthProvider>
     )

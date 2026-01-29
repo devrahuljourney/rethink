@@ -1,85 +1,31 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import {
   View,
   Text,
   StyleSheet,
-  Platform,
   TouchableOpacity,
-  AppState,
   FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import {
-  checkForPermission,
-  queryAndAggregateUsageStats,
-  showUsageAccessSettings,
-} from '@brighthustle/react-native-usage-stats-manager'
+import { showUsageAccessSettings } from '@brighthustle/react-native-usage-stats-manager'
 import { useNavigation } from '@react-navigation/native'
 import { color } from '../../constant/color'
 import FilterTabs from './components/FilterTabs'
 import AppUsageItem from './components/AppUsageItem'
-import { AppUsageStats, FilterRange } from '../../types/usage'
+import { useUsage } from '../../context/UsageContext'
+import { FilterRange } from '../../types/usage'
 
 export default function AppScreen() {
   const navigation = useNavigation<any>()
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
-  const [usageData, setUsageData] = useState<AppUsageStats[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [activeRange, setActiveRange] = useState<FilterRange>('DAILY')
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') {
-      setError('Usage stats are only available on Android')
-      return
-    }
-    checkPermission()
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkPermission()
-    })
-    return () => subscription.remove()
-  }, [])
-
-  useEffect(() => {
-    if (hasPermission) fetchUsageStats()
-  }, [activeRange, hasPermission])
-
-  const checkPermission = async () => {
-    try {
-      const granted = await checkForPermission()
-      setHasPermission(granted)
-      if (granted) fetchUsageStats()
-    } catch (e) {
-      setError('Permission check failed')
-    }
-  }
-
-  const fetchUsageStats = async () => {
-    setRefreshing(true)
-    try {
-      const endMilliseconds = Date.now()
-      let startMilliseconds = endMilliseconds - 24 * 60 * 60 * 1000
-
-      if (activeRange === 'WEEKLY') {
-        startMilliseconds = endMilliseconds - 7 * 24 * 60 * 60 * 1000
-      } else if (activeRange === 'MONTHLY') {
-        startMilliseconds = endMilliseconds - 30 * 24 * 60 * 60 * 1000
-      }
-
-      const rawResult = await queryAndAggregateUsageStats(startMilliseconds, endMilliseconds)
-      const usageArray: AppUsageStats[] = Object.values(rawResult as any)
-      const filteredResult = usageArray
-        .filter(app => app.totalTimeInForeground > 0 && !app.isSystem)
-        .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground)
-
-      setUsageData(filteredResult)
-    } catch (e) {
-      setError('Failed to fetch usage stats')
-    } finally {
-      setRefreshing(false)
-    }
-  }
+  const {
+    usageData,
+    activeRange,
+    setActiveRange,
+    refreshUsage,
+    isLoading,
+    hasPermission
+  } = useUsage();
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -115,8 +61,8 @@ export default function AppScreen() {
           )}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.listContent}
-          refreshing={refreshing}
-          onRefresh={fetchUsageStats}
+          refreshing={isLoading}
+          onRefresh={refreshUsage}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
