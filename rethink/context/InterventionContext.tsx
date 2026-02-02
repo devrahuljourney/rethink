@@ -129,7 +129,7 @@ export const InterventionProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 resetIntervention();
             }
         }
-    }, [isInterventionEnabled, monitoredApps, isIntervening, currentTriggerApp, resetIntervention]);
+    }, [isInterventionEnabled, monitoredApps, isIntervening, currentTriggerApp, resetIntervention, isAppBlocked, isAppBlockedByFocus]);
 
     useEffect(() => {
         if (Platform.OS !== 'android' || !eventEmitter) return;

@@ -14,8 +14,8 @@ const { height, width } = Dimensions.get('window');
 const InterventionOverlay: React.FC = () => {
     const { resetIntervention, currentTriggerApp } = useIntervention();
     const { usageData, getAppCategory } = useUsage();
-    const { getLimitStatus } = useAppLimits();
-    const { isAppBlockedByFocus } = useFocusMode();
+    const { getLimitStatus, limits, pauseLimit } = useAppLimits();
+    const { isAppBlockedByFocus, activeFocusMode, toggleFocusMode } = useFocusMode();
     const [fadeAnim] = useState(new Animated.Value(0));
     const [slideAnim] = useState(new Animated.Value(height));
 
@@ -59,6 +59,25 @@ const InterventionOverlay: React.FC = () => {
             resetIntervention();
         });
     };
+
+    const handleDisableBlock = async () => {
+        try {
+            if (limitStatus?.isBlocked) {
+                const limit = limits.find(l => l.packageName === currentTriggerApp);
+                if (limit) {
+                    await pauseLimit(limit.id);
+                }
+            } else if (currentTriggerApp && isAppBlockedByFocus(currentTriggerApp)) {
+                if (activeFocusMode) {
+                    await toggleFocusMode(activeFocusMode.id, false);
+                }
+            }
+            handleContinue();
+        } catch (error) {
+            console.error('Failed to disable block:', error);
+        }
+    };
+
 
     const getAppName = (packageName: string | null) => {
         if (!packageName) return 'this app';
@@ -167,6 +186,17 @@ const InterventionOverlay: React.FC = () => {
                         </TouchableOpacity>
                     )}
 
+                    {isHardBlocked && (
+                        <TouchableOpacity
+                            style={[styles.button, styles.tertiaryButton]}
+                            onPress={handleDisableBlock}
+                        >
+                            <Text style={styles.tertiaryButtonText}>
+                                {limitStatus?.isBlocked ? 'Pause limit for today' : 'Turn off Focus Mode'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity
                         style={[styles.button, styles.secondaryButton, isHardBlocked && styles.hardBlockedButton]}
                         onPress={() => resetIntervention()}
@@ -176,6 +206,7 @@ const InterventionOverlay: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
                 </View>
+
 
 
                 <Text style={styles.footerText}>Rethink your digital habits</Text>
@@ -349,8 +380,20 @@ const styles = StyleSheet.create({
     hardBlockedButtonText: {
         color: '#FFF',
         fontWeight: '700',
+    },
+    tertiaryButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderWidth: 1,
+        borderColor: '#444',
+        marginBottom: 8,
+    },
+    tertiaryButtonText: {
+        color: '#AAA',
+        fontSize: 14,
+        fontWeight: '600',
     }
 });
+
 
 
 export default InterventionOverlay;

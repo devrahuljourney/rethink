@@ -8,8 +8,8 @@ import { useFocusMode } from '../../context/FocusModeContext';
 import { useUsage } from '../../context/UsageContext';
 
 const FocusModeScreen = () => {
-    const navigation = useNavigation();
-    const { focusModes, toggleFocusMode, addFocusMode } = useFocusMode();
+    const navigation = useNavigation<any>();
+    const { focusModes, toggleFocusMode } = useFocusMode();
     const { usageData } = useUsage();
 
     const [isGlobalEnabled, setIsGlobalEnabled] = useState(true);
@@ -32,7 +32,10 @@ const FocusModeScreen = () => {
             </View>
             <View style={styles.modeStats}>
                 <Text style={styles.statsText}>{item.blockedApps?.length || 0} apps blocked</Text>
-                <TouchableOpacity style={styles.editButton}>
+                <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => navigation.navigate('FocusModeDetail', { focusModeId: item.id })}
+                >
                     <Text style={styles.editButtonText}>Edit Schedule</Text>
                 </TouchableOpacity>
             </View>
@@ -61,9 +64,7 @@ const FocusModeScreen = () => {
                     <Text style={styles.sectionTitle}>Your Focus Schedules</Text>
                     <TouchableOpacity
                         style={styles.addButton}
-                        onPress={() => {
-                            // Logic to add new focus mode
-                        }}
+                        onPress={() => navigation.navigate('FocusModeDetail')}
                     >
                         <Ionicons name="add" size={20} color={color.primary} />
                         <Text style={styles.addButtonText}>Add New</Text>
@@ -79,25 +80,13 @@ const FocusModeScreen = () => {
                     />
                 ) : (
                     <View style={styles.emptyState}>
+                        <Ionicons name="cafe-outline" size={48} color="#333" style={{ marginBottom: 16 }} />
                         <Text style={styles.emptyText}>No focus schedules yet.</Text>
                         <TouchableOpacity
                             style={styles.createButton}
-                            onPress={() => {
-                                addFocusMode({
-                                    name: 'Work Focus',
-                                    enabled: false,
-                                    schedules: [{
-                                        enabled: true,
-                                        startTime: '09:00',
-                                        endTime: '17:00',
-                                        days: [1, 2, 3, 4, 5]
-                                    }],
-                                    blockedApps: [],
-                                    whitelistedApps: []
-                                });
-                            }}
+                            onPress={() => navigation.navigate('FocusModeDetail')}
                         >
-                            <Text style={styles.createButtonText}>Create "Work Focus"</Text>
+                            <Text style={styles.createButtonText}>Create Your First Focus</Text>
                         </TouchableOpacity>
                     </View>
                 )}

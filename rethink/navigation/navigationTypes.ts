@@ -9,6 +9,7 @@ export type AppStackParamList = {
     AppDetails: { packageName: string };
     AppLimits: { packageName: string };
     FocusMode: undefined;
+    FocusModeDetail: { focusModeId?: string };
 };
 
 
