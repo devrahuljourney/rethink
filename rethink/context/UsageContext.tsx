@@ -18,32 +18,61 @@ interface UsageContextType {
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
 
-// Robust filter for system/common apps that shouldn't clutter the main list
+ // Comprehensive filter for system/common apps
 const BLACKLISTED_PACKAGES = [
-    'com.android.settings',
     'com.android.launcher',
     'com.google.android.googlequicksearchbox',
     'com.android.systemui',
     'com.android.vending',
     'com.google.android.gms',
-    'com.android.chrome',
-    'com.rethink',
     'android',
-    'com.android.providers.calendar',
-    'com.android.providers.media',
-    'com.android.providers.downloads',
-    'com.android.bluetooth',
-    'com.android.nfc',
-    'com.android.stk',
-    'com.android.keychain',
-    'com.android.packageinstaller',
-    'com.google.android.calculator',
-    'com.google.android.calendar',
+    'com.miui.home',
+    'com.miui.securitycenter',
+    'com.android.incallui',
     'com.google.android.deskclock',
-    'com.android.dialer',
-    'com.android.contacts',
-    'com.android.mms',
+    'com.android.phone',
+    'com.sec.android.app.launcher',
+    'com.google.android.apps.nexuslauncher',
+    'com.huawei.android.launcher',
 ];
+
+const BLACKLISTED_PREFIXES = [
+    'com.android.providers.',
+    'com.google.android.apps.internal.',
+    'com.xiaomi.',
+    'com.miui.',
+    'com.samsung.',
+];
+
+const FRIENDLY_NAME_MAP: Record<string, string> = {
+    'com.google.android.youtube': 'YouTube',
+    'com.google.android.apps.photos': 'Photos',
+    'com.instagram.android': 'Instagram',
+    'com.facebook.katana': 'Facebook',
+    'com.zhiliaoapp.musically': 'TikTok',
+    'com.whatsapp': 'WhatsApp',
+    'com.twitter.android': 'X (Twitter)',
+    'com.linkedin.android': 'LinkedIn',
+    'com.spotify.music': 'Spotify',
+    'com.netflix.mediaclient': 'Netflix',
+    'com.amazon.mShop.android.shopping': 'Amazon',
+};
+
+const getFriendlyName = (packageName: string, appName?: string) => {
+    if (FRIENDLY_NAME_MAP[packageName]) return FRIENDLY_NAME_MAP[packageName];
+    if (appName && !appName.includes('.')) return appName;
+
+    // Clean up package name as fallback
+    const parts = packageName.split('.');
+    const lastPart = parts[parts.length - 1];
+
+    // Common cleanup
+    return lastPart
+        .replace(/_/g, ' ')
+        .replace(/^[a-z]/, (L) => L.toUpperCase())
+        .replace(/([A-Z])/g, ' $1')
+        .trim();
+};
 
 export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [usageData, setUsageData] = useState<AppUsageStats[]>([]);
