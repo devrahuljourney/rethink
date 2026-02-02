@@ -5,12 +5,24 @@ import { color } from '../../../constant/color';
 import { AppUsageStats } from '../../../types/usage';
 import { formatTime } from '../../../utils/timeUtils';
 
+import { useAppLimits } from '../../../context/AppLimitContext';
+import { useUsage } from '../../../context/UsageContext';
+import { getCategoryColor, getCategoryIcon } from '../../../utils/categoryMapper';
+
 interface AppUsageItemProps {
     item: AppUsageStats;
     onPress?: () => void;
 }
 
 const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress }) => {
+    const { getLimitStatus } = useAppLimits();
+    const { getAppCategory } = useUsage();
+
+    const limitStatus = getLimitStatus(item.packageName);
+    const category = getAppCategory(item.packageName);
+    const categoryColor = getCategoryColor(category);
+    const categoryIcon = getCategoryIcon(category);
+
     return (
         <TouchableOpacity
             style={styles.itemContainer}
@@ -18,10 +30,8 @@ const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress }) => {
             activeOpacity={0.7}
             disabled={!onPress}
         >
-            <View style={styles.itemIconContainer}>
-                <Text style={styles.itemIconText}>
-                    {(item.appName || item.packageName.split('.').pop())?.charAt(0).toUpperCase()}
-                </Text>
+            <View style={[styles.itemIconContainer, { backgroundColor: `${categoryColor}20` }]}>
+                <Ionicons name={categoryIcon} size={24} color={categoryColor} />
             </View>
             <View style={styles.itemInfo}>
                 <Text style={styles.packageName} numberOfLines={1}>
@@ -30,6 +40,19 @@ const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress }) => {
                 <View style={styles.itemSubInfo}>
                     <Ionicons name="repeat-outline" size={12} color={color.secondary} />
                     <Text style={styles.launchText}>{item.appLaunchCount || 0} launches</Text>
+                    {limitStatus && (
+                        <View style={styles.limitIndicator}>
+                            <View
+                                style={[
+                                    styles.limitProgress,
+                                    {
+                                        width: `${Math.min(100, limitStatus.percentageUsed)}%`,
+                                        backgroundColor: limitStatus.isWarning ? '#FF9500' : color.primary
+                                    }
+                                ]}
+                            />
+                        </View>
+                    )}
                 </View>
             </View>
             <View style={styles.itemStats}>
@@ -41,6 +64,7 @@ const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress }) => {
                 )}
             </View>
         </TouchableOpacity>
+
     );
 };
 
@@ -98,6 +122,19 @@ const styles = StyleSheet.create({
         color: color.primary,
         fontWeight: '800',
     },
+    limitIndicator: {
+        height: 4,
+        width: 60,
+        backgroundColor: '#2A2A2A',
+        borderRadius: 2,
+        marginLeft: 12,
+        overflow: 'hidden',
+    },
+    limitProgress: {
+        height: '100%',
+        borderRadius: 2,
+    },
 });
+
 
 export default AppUsageItem;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -10,11 +10,19 @@ import { queryAndAggregateUsageStats } from '@brighthustle/react-native-usage-st
 import { getStartOfDay, formatTime } from '../../utils/timeUtils';
 import InsightCard from './components/InsightCard';
 import LinearGradient from 'react-native-linear-gradient';
+import { useAppLimits } from '../../context/AppLimitContext';
+import { useUsage } from '../../context/UsageContext';
+import { getCategoryColor, getCategoryIcon } from '../../utils/categoryMapper';
+
+const { width } = Dimensions.get('window');
 
 const AppDetails = () => {
     const route = useRoute<any>();
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const { packageName } = route.params;
+
+    const { getLimitStatus, addLimit, deleteLimit } = useAppLimits();
+    const { getAppCategory } = useUsage();
 
     const [isInterventionEnabled, setIsInterventionEnabled] = useState(false);
     const [usageHistory, setUsageHistory] = useState<{ value: number; label: string }[]>([]);
@@ -83,6 +91,18 @@ const AppDetails = () => {
                     <View style={styles.appInfo}>
                         <Text style={styles.appName}>{packageName.split('.').pop()}</Text>
                         <Text style={styles.packageName} numberOfLines={1}>{packageName}</Text>
+
+                        {(() => {
+                            const category = getAppCategory(packageName);
+                            return (
+                                <View style={[styles.categoryBadgeDetail, { backgroundColor: `${getCategoryColor(category)}20` }]}>
+                                    <Ionicons name={getCategoryIcon(category)} size={12} color={getCategoryColor(category)} />
+                                    <Text style={[styles.categoryTextDetail, { color: getCategoryColor(category) }]}>
+                                        {category}
+                                    </Text>
+                                </View>
+                            );
+                        })()}
                     </View>
                 </View>
 
@@ -97,6 +117,51 @@ const AppDetails = () => {
                             <Text style={styles.statLabel}>Today's Usage</Text>
                             <Text style={styles.statValue}>{formatTime(todayUsage)}</Text>
                         </View>
+
+                        {(() => {
+                            const status = getLimitStatus(packageName);
+                            return (
+                                <View style={styles.limitSection}>
+                                    <View style={styles.limitHeader}>
+                                        <Text style={styles.limitTitle}>Daily Time Limit</Text>
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('AppLimits', { packageName })}
+                                            style={styles.limitAction}
+                                        >
+                                            <Text style={styles.limitActionText}>
+                                                {status ? 'Edit' : 'Set Limit'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {status ? (
+                                        <View style={styles.limitStatusCard}>
+                                            <View style={styles.limitBarLarge}>
+                                                <View
+                                                    style={[
+                                                        styles.limitProgressLarge,
+                                                        {
+                                                            width: `${Math.min(100, status.percentageUsed)}%`,
+                                                            backgroundColor: status.isWarning ? '#FF9500' : color.primary
+                                                        }
+                                                    ]}
+                                                />
+                                            </View>
+                                            <View style={styles.limitInfoRow}>
+                                                <Text style={styles.limitInfoText}>
+                                                    {Math.round(status.percentageUsed)}% used
+                                                </Text>
+                                                <Text style={styles.limitInfoText}>
+                                                    {formatTime(status.limitMs)} total
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ) : (
+                                        <Text style={styles.noLimitText}>No daily limit set for this app.</Text>
+                                    )}
+                                </View>
+                            );
+                        })()}
 
                         <UsageBarChart
                             data={usageHistory}
@@ -212,6 +277,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 4,
     },
+    categoryBadgeDetail: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginTop: 8,
+        gap: 4,
+    },
+    categoryTextDetail: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
     appHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -232,7 +311,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     todayStats: {
-        marginHorizontal: 24,
+        width: width - 48,
         marginBottom: 24,
         backgroundColor: '#1E1E1E',
         padding: 24,
@@ -240,6 +319,63 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#2A2A2A',
         alignItems: 'center',
+    },
+    limitSection: {
+        width: width - 48,
+        marginBottom: 24,
+        backgroundColor: '#1E1E1E',
+        padding: 24,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+    },
+    limitHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    limitTitle: {
+        color: color.white,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    limitAction: {
+        paddingVertical: 4,
+    },
+    limitActionText: {
+        color: color.primary,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    limitStatusCard: {
+        width: '100%',
+    },
+    limitBarLarge: {
+        width: '100%',
+        height: 12,
+        backgroundColor: '#2A2A2A',
+        borderRadius: 6,
+        overflow: 'hidden',
+        marginBottom: 12,
+    },
+    limitProgressLarge: {
+        height: '100%',
+        borderRadius: 6,
+    },
+    limitInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    limitInfoText: {
+        color: color.secondary,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    noLimitText: {
+        color: '#555',
+        fontSize: 14,
+        fontStyle: 'italic',
     },
     statLabel: {
         color: color.secondary,

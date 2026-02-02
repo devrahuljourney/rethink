@@ -55,6 +55,22 @@ export default function Home() {
           activeRange={activeRange}
           onRangeChange={(range) => setActiveRange(range)}
         />
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.focusCard}
+            onPress={() => navigation.navigate('AppStack', { screen: 'FocusMode' })}
+          >
+            <View style={styles.focusIconCircle}>
+              <Ionicons name="shield-checkmark" size={24} color={color.primary} />
+            </View>
+            <View style={styles.focusInfo}>
+              <Text style={styles.focusTitle}>Focus Mode</Text>
+              <Text style={styles.focusSubtitle}>Block distractions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#555" />
+          </TouchableOpacity>
+        </View>
+
         <UsageOverview
           totalUsage={formatTime(totalTodayMs)}
           mostUsedApp={mostUsed}
@@ -63,20 +79,32 @@ export default function Home() {
           activeRange={activeRange}
           avgUsage={comparisonText}
         />
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Top Categories</Text>
+        </View>
+        <View style={styles.categoryGrid}>
+          {useUsage().categoryStats.slice(0, 4).map((stat) => (
+            <View key={stat.category} style={styles.categoryCard}>
+              <View style={[styles.categoryIcon, { backgroundColor: `${require('../../utils/categoryMapper').getCategoryColor(stat.category)}20` }]}>
+                <Ionicons
+                  name={require('../../utils/categoryMapper').getCategoryIcon(stat.category)}
+                  size={20}
+                  color={require('../../utils/categoryMapper').getCategoryColor(stat.category)}
+                />
+              </View>
+              <Text style={styles.categoryName}>{stat.category}</Text>
+              <Text style={styles.categoryTime}>{formatTime(stat.totalUsageMs)}</Text>
+            </View>
+          ))}
+        </View>
+
         {usageData.length > 0 && (
           <>
             <UsageGraph data={usageData.slice(0, 5).map(app => ({
               name: app.appName || app.packageName.split('.').pop() || 'Unknown',
               usageTime: app.totalTimeInForeground
             }))} />
-            <LaunchGraph data={usageData
-              .filter(app => (app.appLaunchCount || 0) > 0)
-              .sort((a, b) => (b.appLaunchCount || 0) - (a.appLaunchCount || 0))
-              .slice(0, 5)
-              .map(app => ({
-                name: app.packageName.split('.').pop() || 'Unknown',
-                launches: app.appLaunchCount || 0
-              }))} />
           </>
         )}
 
@@ -89,6 +117,7 @@ export default function Home() {
             <Ionicons name="arrow-forward" size={18} color={color.primary} />
           </TouchableOpacity>
         </View>
+
       </View>
     );
   };
@@ -258,4 +287,86 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 16,
   },
+  quickActions: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  focusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    padding: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  focusIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  focusInfo: {
+    flex: 1,
+  },
+  focusTitle: {
+    color: color.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  focusSubtitle: {
+    color: color.secondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  sectionHeader: {
+    paddingHorizontal: 24,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: color.white,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  categoryCard: {
+    width: '47%',
+    backgroundColor: '#1E1E1E',
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  categoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryName: {
+    color: color.white,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  categoryTime: {
+    color: color.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
 })
+

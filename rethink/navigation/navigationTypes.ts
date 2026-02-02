@@ -7,7 +7,10 @@ export type HomeStackParamList = {
 export type AppStackParamList = {
     App: undefined;
     AppDetails: { packageName: string };
+    AppLimits: { packageName: string };
+    FocusMode: undefined;
 };
+
 
 export type SettingStackParamList = {
     Settings: undefined;

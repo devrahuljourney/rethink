@@ -23,7 +23,17 @@ class AppEventModule(private val context: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun updateBlockedApps(blockedPackages: ReadableArray) {
+        val packageSet = mutableSetOf<String>()
+        for (i in 0 until blockedPackages.size()) {
+            blockedPackages.getString(i)?.let { packageSet.add(it) }
+        }
+        AppForegroundService.setBlockedPackages(packageSet)
+    }
+
+    @ReactMethod
     fun isServiceConnected(promise: Promise) {
+
         promise.resolve(AppForegroundService.isServiceConnected)
     }
 

@@ -28,3 +28,26 @@ export const getPreviousDayEnd = () => {
     d.setHours(0, 0, 0, 0);
     return d.getTime() - 1;
 };
+
+export const calculatePercentage = (current: number, total: number): number => {
+    if (total === 0) return 0;
+    return Math.min(100, Math.round((current / total) * 100));
+};
+
+export const formatTimeRemaining = (ms: number): string => {
+    if (ms <= 0) return 'Time\'s up!';
+
+    const minutes = Math.floor(ms / 60000);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${remainingMinutes}m remaining`;
+    }
+
+    if (minutes > 0) {
+        return `${minutes}m remaining`;
+    }
+
+    return 'Less than a minute';
+};

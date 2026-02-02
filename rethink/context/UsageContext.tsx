@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 import { queryAndAggregateUsageStats, checkForPermission } from '@brighthustle/react-native-usage-stats-manager';
 import { AppUsageStats, FilterRange } from '../types/usage';
 import { getStartOfDay, getPreviousDayStart, getPreviousDayEnd } from '../utils/timeUtils';
+import { CategoryStats, AppCategory } from '../types/appLimits';
+import { getAppCategory } from '../utils/categoryMapper';
 
 interface UsageContextType {
     usageData: AppUsageStats[];
@@ -14,11 +16,14 @@ interface UsageContextType {
     refreshUsage: () => Promise<void>;
     isLoading: boolean;
     hasPermission: boolean | null;
+    categoryStats: CategoryStats[];
+    getAppCategory: (packageName: string) => AppCategory;
 }
+
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
 
- // Comprehensive filter for system/common apps
+// Comprehensive filter for system/common apps
 const BLACKLISTED_PACKAGES = [
     'com.android.launcher',
     'com.google.android.googlequicksearchbox',
@@ -82,6 +87,8 @@ export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [activeRange, setActiveRange] = useState<FilterRange>('DAILY');
     const [isLoading, setIsLoading] = useState(false);
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+    const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+
 
     const fetchUsage = useCallback(async () => {
         if (Platform.OS !== 'android') return;
@@ -150,6 +157,40 @@ export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setUsageComparison(0);
             }
 
+            // 4. Calculate Category Statistics
+            const categoryMap = new Map<AppCategory, {
+                totalUsageMs: number;
+                apps: Array<{ packageName: string; appName?: string; usageMs: number }>;
+            }>();
+
+            filtered.forEach(app => {
+                const category = getAppCategory(app.packageName);
+                const existing = categoryMap.get(category) || { totalUsageMs: 0, apps: [] };
+
+                existing.totalUsageMs += app.totalTimeInForeground;
+                existing.apps.push({
+                    packageName: app.packageName,
+                    appName: app.appName,
+                    usageMs: app.totalTimeInForeground,
+                });
+
+                categoryMap.set(category, existing);
+            });
+
+            const categoryStatsArray: CategoryStats[] = Array.from(categoryMap.entries())
+                .map(([category, data]) => ({
+                    category,
+                    totalUsageMs: data.totalUsageMs,
+                    appCount: data.apps.length,
+                    percentageOfTotal: rangeTotalMs > 0 ? (data.totalUsageMs / rangeTotalMs) * 100 : 0,
+                    topApps: data.apps
+                        .sort((a, b) => b.usageMs - a.usageMs)
+                        .slice(0, 3),
+                }))
+                .sort((a, b) => b.totalUsageMs - a.totalUsageMs);
+
+            setCategoryStats(categoryStatsArray);
+
         } catch (error) {
             console.error('UsageContext: Error fetching usage:', error);
         } finally {
@@ -181,6 +222,8 @@ export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 refreshUsage: fetchUsage,
                 isLoading,
                 hasPermission,
+                categoryStats,
+                getAppCategory,
             }}
         >
             {children}
