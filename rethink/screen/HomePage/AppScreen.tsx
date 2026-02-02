@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  TextInput,
+  ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons'
@@ -15,6 +17,7 @@ import FilterTabs from './components/FilterTabs'
 import AppUsageItem from './components/AppUsageItem'
 import { useUsage } from '../../context/UsageContext'
 import { FilterRange } from '../../types/usage'
+import { AppCategory } from '../../types/appLimits'
 
 export default function AppScreen() {
   const navigation = useNavigation<any>()
@@ -24,13 +27,83 @@ export default function AppScreen() {
     setActiveRange,
     refreshUsage,
     isLoading,
-    hasPermission
+    hasPermission,
+    getAppCategory
   } = useUsage();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<AppCategory | 'ALL'>('ALL');
+
+  const categories: (AppCategory | 'ALL')[] = [
+    'ALL',
+    AppCategory.SOCIAL,
+    AppCategory.ENTERTAINMENT,
+    AppCategory.PRODUCTIVITY,
+    AppCategory.GAMES,
+    AppCategory.COMMUNICATION,
+    AppCategory.OTHER
+  ];
+
+  const filteredAndSortedData = useMemo(() => {
+    return usageData
+      .filter(app => {
+        const appName = (app.appName || app.packageName.split('.').pop() || '').toLowerCase();
+        const matchesSearch = appName.includes(searchQuery.toLowerCase()) ||
+          app.packageName.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesCategory = selectedCategory === 'ALL' || getAppCategory(app.packageName) === selectedCategory;
+
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground);
+  }, [usageData, searchQuery, selectedCategory, getAppCategory]);
 
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.title}>All Usage</Text>
-      <Text style={styles.subtitle}>{usageData.length} active apps</Text>
+      <Text style={styles.subtitle}>{filteredAndSortedData.length} apps found</Text>
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search apps..."
+          placeholderTextColor="#666"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={18} color="#666" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryScroll}
+        contentContainerStyle={styles.categoryContainer}
+      >
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryChip,
+              selectedCategory === category && styles.activeCategoryChip
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text style={[
+              styles.categoryChipText,
+              selectedCategory === category && styles.activeCategoryChipText
+            ]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <View style={styles.filterWrapper}>
         <FilterTabs
           activeRange={activeRange}
@@ -51,7 +124,7 @@ export default function AppScreen() {
         </View>
       ) : (
         <FlatList
-          data={usageData}
+          data={filteredAndSortedData}
           keyExtractor={(item) => item.packageName}
           renderItem={({ item }) => (
             <AppUsageItem
@@ -66,8 +139,8 @@ export default function AppScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="apps-outline" size={48} color="#333" />
-              <Text style={styles.emptyText}>No apps found</Text>
+              <Ionicons name="search-outline" size={48} color="#333" />
+              <Text style={styles.emptyText}>No matches found</Text>
             </View>
           }
         />
@@ -75,6 +148,7 @@ export default function AppScreen() {
     </SafeAreaView>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -95,6 +169,55 @@ const styles = StyleSheet.create({
     color: color.primary,
     fontWeight: '600',
     marginTop: 4,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    marginTop: 20,
+    paddingHorizontal: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: color.white,
+    fontSize: 15,
+    height: '100%',
+  },
+  categoryScroll: {
+    marginTop: 16,
+  },
+  categoryContainer: {
+    paddingRight: 24,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#1E1E1E',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  activeCategoryChip: {
+    backgroundColor: color.primary,
+    borderColor: color.primary,
+  },
+  categoryChipText: {
+    color: color.secondary,
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  activeCategoryChipText: {
+    color: color.black,
+    fontWeight: '700',
   },
   filterWrapper: {
     marginTop: 20,
