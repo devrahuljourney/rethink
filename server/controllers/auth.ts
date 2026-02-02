@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { USER_SIGNUP_DATA } from "@app-types/auth";
-import supabase from "@config/supabase";
+import { USER_SIGNUP_DATA } from "../types/auth";
+import supabase from "../config/supabase";
 import { CookieOptions } from "express";
 import { User } from "@supabase/supabase-js";
 

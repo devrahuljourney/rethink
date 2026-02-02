@@ -1,4 +1,4 @@
-import supabase from "@config/supabase";
+import supabase from "../config/supabase";
 import { Request, Response, NextFunction } from "express";
 import { User } from "@supabase/supabase-js";
 
