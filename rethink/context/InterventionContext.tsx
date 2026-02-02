@@ -2,8 +2,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionManager from '../utils/PermissionManager';
+import { useAppLimits } from './AppLimitContext';
+import { useFocusMode } from './FocusModeContext';
 
 const { AppEventModule } = NativeModules;
+
 const eventEmitter = AppEventModule ? new NativeEventEmitter(AppEventModule) : null;
 
 interface InterventionContextType {
@@ -37,7 +40,11 @@ export const InterventionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [isIntervening, setIsIntervening] = useState(false);
     const [currentTriggerApp, setCurrentTriggerApp] = useState<string | null>(null);
 
+    const { isAppBlocked } = useAppLimits();
+    const { isAppBlockedByFocus } = useFocusMode();
+
     // Load persisted state
+
     useEffect(() => {
         const loadState = async () => {
             try {
@@ -91,27 +98,30 @@ export const InterventionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, []);
 
     const handleAppForegroundChange = useCallback((packageName: string) => {
-        if (!isInterventionEnabled) return;
-
         // If we are currently in Rethink, don't trigger anything but also don't reset
         if (packageName === 'com.rethink') {
             console.log('Context: App is in Rethink, skipping triggering');
             return;
         }
 
-        // Check if the foreground app is in the monitored list
-        if (monitoredApps.includes(packageName)) {
+        const isHardBlocked = isAppBlocked(packageName) || isAppBlockedByFocus(packageName);
+        const shouldIntervene = isInterventionEnabled && monitoredApps.includes(packageName);
+
+        // Check if the foreground app should be blocked or intervened
+        if (isHardBlocked || shouldIntervene) {
             // Avoid double triggering for the same app if we are already intervening
             if (isIntervening && currentTriggerApp === packageName) return;
 
-            console.log(`Intervention triggered for: ${packageName}`);
+            console.log(`Intervention/Block triggered for: ${packageName} (Hard: ${isHardBlocked})`);
             setCurrentTriggerApp(packageName);
             setIsIntervening(true);
 
+            // Ensure native side also knows to block
             if (AppEventModule) {
                 AppEventModule.blockApp(packageName);
             }
         } else {
+
             // If the user switched to a DIFFERENT, un-monitored app, reset the flag
             // This ensures that if they open YouTube again later, it triggers.
             if (isIntervening) {

@@ -5,6 +5,7 @@ import { color } from '../../constant/color';
 import { useIntervention } from '../../context/InterventionContext';
 import { useUsage } from '../../context/UsageContext';
 import { useAppLimits } from '../../context/AppLimitContext';
+import { useFocusMode } from '../../context/FocusModeContext';
 import { formatTime } from '../../utils/timeUtils';
 import { getCategoryColor, getCategoryIcon } from '../../utils/categoryMapper';
 
@@ -14,6 +15,7 @@ const InterventionOverlay: React.FC = () => {
     const { resetIntervention, currentTriggerApp } = useIntervention();
     const { usageData, getAppCategory } = useUsage();
     const { getLimitStatus } = useAppLimits();
+    const { isAppBlockedByFocus } = useFocusMode();
     const [fadeAnim] = useState(new Animated.Value(0));
     const [slideAnim] = useState(new Animated.Value(height));
 
@@ -21,6 +23,9 @@ const InterventionOverlay: React.FC = () => {
     const appData = usageData.find(app => app.packageName === currentTriggerApp);
     const limitStatus = currentTriggerApp ? getLimitStatus(currentTriggerApp) : null;
     const category = currentTriggerApp ? getAppCategory(currentTriggerApp) : null;
+
+    const isHardBlocked = limitStatus?.isBlocked || (currentTriggerApp ? isAppBlockedByFocus(currentTriggerApp) : false);
+
 
     useEffect(() => {
         Animated.parallel([
@@ -78,13 +83,26 @@ const InterventionOverlay: React.FC = () => {
         <View style={styles.overlay}>
             <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
                 <View style={styles.header}>
-                    <View style={styles.iconCircle}>
-                        <Ionicons name="leaf-outline" size={40} color="#34C759" />
+                    <View style={[styles.iconCircle, isHardBlocked && { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}>
+                        <Ionicons
+                            name={isHardBlocked ? "lock-closed-outline" : "leaf-outline"}
+                            size={40}
+                            color={isHardBlocked ? "#FF3B30" : "#34C759"}
+                        />
                     </View>
-                    <Text style={styles.title}>Take a Breath</Text>
+                    <Text style={[styles.title, isHardBlocked && { color: '#FF3B30' }]}>
+                        {isHardBlocked ? 'App Blocked' : 'Take a Breath'}
+                    </Text>
                     <Text style={styles.subtitle}>
-                        You are about to open <Text style={styles.appName}>{getAppName(currentTriggerApp)}</Text>.
-                        Do you really need to use it right now?
+                        {isHardBlocked
+                            ? `You've reached your limit or Focus Mode is active for `
+                            : `You are about to open `
+                        }
+                        <Text style={styles.appName}>{getAppName(currentTriggerApp)}</Text>.
+                        {isHardBlocked
+                            ? ` This app is currently unavailable.`
+                            : ` Do you really need to use it right now?`
+                        }
                     </Text>
 
                     {category && (
@@ -117,7 +135,7 @@ const InterventionOverlay: React.FC = () => {
                                     styles.limitProgress,
                                     {
                                         width: `${Math.min(100, limitStatus.percentageUsed)}%`,
-                                        backgroundColor: limitStatus.isWarning ? '#FF9500' : '#34C759'
+                                        backgroundColor: limitStatus.isBlocked ? '#FF3B30' : (limitStatus.isWarning ? '#FF9500' : '#34C759')
                                     }
                                 ]}
                             />
@@ -131,21 +149,34 @@ const InterventionOverlay: React.FC = () => {
                     </View>
                 )}
 
+
+                {!limitStatus && currentTriggerApp && isAppBlockedByFocus(currentTriggerApp) && (
+                    <View style={styles.focusInfo}>
+                        <Ionicons name="shield-checkmark" size={16} color={color.primary} />
+                        <Text style={styles.focusText}>Active Focus Mode is blocking this app</Text>
+                    </View>
+                )}
+
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[styles.button, styles.primaryButton]}
-                        onPress={handleContinue}
-                    >
-                        <Text style={styles.primaryButtonText}>I really need this</Text>
-                    </TouchableOpacity>
+                    {!isHardBlocked && (
+                        <TouchableOpacity
+                            style={[styles.button, styles.primaryButton]}
+                            onPress={handleContinue}
+                        >
+                            <Text style={styles.primaryButtonText}>I really need this</Text>
+                        </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
-                        style={[styles.button, styles.secondaryButton]}
+                        style={[styles.button, styles.secondaryButton, isHardBlocked && styles.hardBlockedButton]}
                         onPress={() => resetIntervention()}
                     >
-                        <Text style={styles.secondaryButtonText}>Close app</Text>
+                        <Text style={[styles.secondaryButtonText, isHardBlocked && styles.hardBlockedButtonText]}>
+                            {isHardBlocked ? 'Close app' : 'No, I\'m good'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
+
 
                 <Text style={styles.footerText}>Rethink your digital habits</Text>
             </Animated.View>
@@ -294,7 +325,32 @@ const styles = StyleSheet.create({
         color: '#555',
         fontSize: 12,
         marginTop: 24,
+    },
+    focusInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 20,
+        backgroundColor: 'rgba(52, 199, 89, 0.1)',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+    },
+    focusText: {
+        color: color.primary,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    hardBlockedButton: {
+        backgroundColor: '#FF3B30',
+        borderColor: '#FF3B30',
+        height: 56,
+    },
+    hardBlockedButtonText: {
+        color: '#FFF',
+        fontWeight: '700',
     }
 });
+
 
 export default InterventionOverlay;

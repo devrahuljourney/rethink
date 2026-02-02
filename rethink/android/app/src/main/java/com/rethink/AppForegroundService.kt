@@ -38,7 +38,6 @@ class AppForegroundService : AccessibilityService() {
 
             if (isBlocked) {
                 triggerBlock(packageName)
-                return
             }
 
             if (reactContext != null) {
