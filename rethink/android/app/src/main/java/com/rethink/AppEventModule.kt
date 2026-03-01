@@ -28,7 +28,24 @@ class AppEventModule(private val context: ReactApplicationContext) :
         for (i in 0 until blockedPackages.size()) {
             blockedPackages.getString(i)?.let { packageSet.add(it) }
         }
+        
+        // Save to SharedPreferences for persistence
+        saveBlockedPackages(packageSet)
+        
+        // Update the running service
         AppForegroundService.setBlockedPackages(packageSet)
+    }
+
+    private fun saveBlockedPackages(packageSet: Set<String>) {
+        val prefs = context.getSharedPreferences("rethink_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putStringSet("blocked_packages", packageSet).apply()
+    }
+
+    companion object {
+        fun getBlockedPackages(context: android.content.Context): Set<String> {
+            val prefs = context.getSharedPreferences("rethink_prefs", android.content.Context.MODE_PRIVATE)
+            return prefs.getStringSet("blocked_packages", emptySet()) ?: emptySet()
+        }
     }
 
     @ReactMethod

@@ -23,6 +23,9 @@ class AppForegroundService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         isServiceConnected = true
+        // Load initial blocked packages from SharedPreferences
+        val persistedPackages = AppEventModule.getBlockedPackages(this)
+        setBlockedPackages(persistedPackages)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -46,13 +49,17 @@ class AppForegroundService : AccessibilityService() {
                     DeviceEventManagerModule.RCTDeviceEventEmitter::class.java
                 )?.emit("APP_FOREGROUND_CHANGED", packageName)
             } else {
-                // Determine if we should start headless task. 
-                // We could filter packages here to avoid spamming the JS thread.
+                // If React context is null, we already triggered the block if it was in blockedPackages.
+                // We still start the Headless task for any background processing.
                 val intent = android.content.Intent(this, AppMonitorHeadlessService::class.java)
                 val bundle = android.os.Bundle()
                 bundle.putString("packageName", packageName)
                 intent.putExtras(bundle)
-                startService(intent)
+                try {
+                    startService(intent)
+                } catch (e: Exception) {
+                    // Fallback for background service restrictions if necessary
+                }
             }
         }
     }

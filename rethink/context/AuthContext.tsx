@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAuthenticated(false);
             setUser(null);
         } finally {
-            setIsLoading(true); // Set to false when done, but keep as true for initial splash logic if needed
+            setIsLoading(true);
             setIsLoading(false);
         }
     }, []);
