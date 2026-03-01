@@ -15,3 +15,7 @@ export const authEndpoints = {
 export const usageEndpoints = {
   sync: `${BASE_URL}/usage/sync`,
 };
+
+export const coachEndpoints = {
+  insights: `${BASE_URL}/coach/insights`,
+};

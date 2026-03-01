@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import HomeStack from '../stack/HomeStack'
 import SettingStack from '../stack/SettingStack'
 import AppStack from '../stack/AppStack'
+import CoachStack from '../stack/CoachStack'
 import { BottomTabParamList } from '../navigationTypes'
 import CustomTabBar from './CustomTabBar'
 import { useAuth } from '../../context/AuthContext'
@@ -22,6 +23,10 @@ export default function BottomTabNav() {
       }}
     >
       <Tab.Screen name="HomeStack" component={HomeStack} />
+      <Tab.Screen
+        name="CoachStack"
+        component={isAuthenticated ? CoachStack : AuthNavigator}
+      />
       <Tab.Screen
         name="AppStack"
         component={isAuthenticated ? AppStack : AuthNavigator}

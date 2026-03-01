@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import authRouter from './routes/auth';
 import usageRouter from './routes/usage';
+import coachRouter from './routes/coach';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
@@ -14,6 +15,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/usage', usageRouter);
+app.use('/api/v1/coach', coachRouter);
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World!');
 });

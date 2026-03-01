@@ -20,9 +20,11 @@ export default function CustomTabBar({
           const icon =
             route.name === 'HomeStack'
               ? 'home'
-              : route.name === 'AppStack'
-              ? 'apps'
-              : 'settings'
+              : route.name === 'CoachStack'
+                ? 'bulb'
+                : route.name === 'AppStack'
+                  ? 'apps'
+                  : 'settings'
 
           return (
             <TouchableOpacity

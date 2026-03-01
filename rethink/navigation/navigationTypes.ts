@@ -4,6 +4,10 @@ export type HomeStackParamList = {
     Home: undefined;
 };
 
+export type CoachStackParamList = {
+    AICoach: undefined;
+};
+
 export type AppStackParamList = {
     App: undefined;
     AppDetails: { packageName: string };
@@ -19,6 +23,7 @@ export type SettingStackParamList = {
 
 export type BottomTabParamList = {
     HomeStack: NavigatorScreenParams<HomeStackParamList> | undefined;
+    CoachStack: NavigatorScreenParams<CoachStackParamList> | undefined;
     AppStack: NavigatorScreenParams<AppStackParamList> | undefined;
     SettingStack: NavigatorScreenParams<SettingStackParamList> | undefined;
 };
