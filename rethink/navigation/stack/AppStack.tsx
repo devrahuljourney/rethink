@@ -5,6 +5,7 @@ import AppScreen from '../../screen/HomePage/AppScreen'
 import AppDetails from '../../screen/HomePage/AppDetails'
 import AppLimits from '../../screen/HomePage/AppLimits'
 import FocusMode from '../../screen/HomePage/FocusMode'
+import FocusModeDetail from '../../screen/HomePage/FocusModeDetail'
 import { AppStackParamList } from '../navigationTypes'
 
 export default function AppStack() {
@@ -15,6 +16,7 @@ export default function AppStack() {
       <Stack.Screen name="AppDetails" component={AppDetails} />
       <Stack.Screen name="AppLimits" component={AppLimits} />
       <Stack.Screen name="FocusMode" component={FocusMode} />
+      <Stack.Screen name="FocusModeDetail" component={FocusModeDetail} />
     </Stack.Navigator>
   )
 }

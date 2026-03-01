@@ -65,7 +65,7 @@ export default function AICoach() {
             label: item.label || 'Other',
             frontColor: color.primary || '#177AD5',
             topLabelComponent: () => (
-                <Text style={{ color: color.white, fontSize: 10, marginBottom: 4 }}>{item.value}</Text>
+                <Text style={{ color: color.white, fontSize: 10, marginBottom: 4 }}>{item.value}m</Text>
             )
         }));
 

@@ -125,3 +125,39 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
     id: user.id,
   });
 };
+
+export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+  try {
+    const { user } = req;
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const { name, mobile_number, avatar_url } = req.body;
+
+    const metadataUpdate: any = {};
+    if (name) metadataUpdate.name = name;
+    if (mobile_number) metadataUpdate.mobile_number = mobile_number;
+    if (avatar_url) metadataUpdate.avatar_url = avatar_url;
+
+    // Use admin client to update user data reliably
+    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: metadataUpdate
+    });
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: data.user.user_metadata
+    });
+
+  } catch (err: any) {
+    console.error("Error updating profile:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

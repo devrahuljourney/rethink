@@ -10,6 +10,7 @@ export const authEndpoints = {
   register: `${BASE_URL}/auth/signup`,
   logout: `${BASE_URL}/auth/logout`,
   profile: `${BASE_URL}/auth/profile`,
+  update: `${BASE_URL}/auth/update`,
 };
 
 export const usageEndpoints = {
