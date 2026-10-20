@@ -1,15 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReduceMotion } from '../../../ui/motion';
-import { palette, font, stroke } from '../../../ui/theme';
+import { palette, font } from '../../../ui/theme';
 import { formatTime } from '../../../utils/timeUtils';
 
 const HEIGHT = 140;
 const MIN_BAR = 6;
 
-function Column({ ms, max, label, today, index }: { ms: number; max: number; label: string; today: boolean; index: number }) {
+export interface ColumnDay {
+    label: string;
+    ms: number;
+    isToday?: boolean;
+}
+
+function Column({ day, max, index, selected, onPress }: {
+    day: ColumnDay; max: number; index: number; selected: boolean; onPress: () => void;
+}) {
     const reduce = useReduceMotion();
-    const target = max > 0 ? Math.max(MIN_BAR, (ms / max) * HEIGHT) : MIN_BAR;
+    const target = max > 0 ? Math.max(MIN_BAR, (day.ms / max) * HEIGHT) : MIN_BAR;
     const h = useRef(new Animated.Value(reduce ? target : 0)).current;
 
     useEffect(() => {
@@ -17,25 +25,40 @@ function Column({ ms, max, label, today, index }: { ms: number; max: number; lab
             h.setValue(target);
             return;
         }
-        Animated.spring(h, { toValue: target, delay: 150 + index * 60, useNativeDriver: false, speed: 10, bounciness: 7 }).start();
+        Animated.spring(h, { toValue: target, delay: 120 + index * 55, useNativeDriver: false, speed: 10, bounciness: 4 }).start();
     }, [target, index, reduce, h]);
 
     return (
-        <View style={styles.col}>
-            {today && <Text style={styles.todayValue}>{formatTime(ms)}</Text>}
-            <Animated.View style={[styles.bar, { height: h, backgroundColor: today ? palette.tomato : palette.card }]} />
-            <Text style={[styles.label, today && styles.labelToday]}>{today ? 'Today' : label}</Text>
-        </View>
+        <Pressable
+            style={styles.col}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`${day.isToday ? 'Today' : day.label}, ${formatTime(day.ms)}`}
+        >
+            <Text style={[styles.value, { opacity: selected ? 1 : 0 }]}>{formatTime(day.ms)}</Text>
+            <Animated.View
+                style={[
+                    styles.bar,
+                    { height: h, backgroundColor: selected ? palette.tomato : palette.ink, opacity: selected ? 1 : 0.8 },
+                ]}
+            />
+            <Text style={[styles.label, selected && styles.labelOn]}>{day.isToday ? 'Today' : day.label}</Text>
+        </Pressable>
     );
 }
 
-/** Seven columns, oldest first; the last one is today and gets the colour. */
-const WeekColumns: React.FC<{ days: { label: string; ms: number }[] }> = ({ days }) => {
+/** Seven tappable columns, oldest first. The selected day is tomato and shows its value. */
+const WeekColumns: React.FC<{ days: ColumnDay[]; selected: number; onSelect: (index: number) => void }> = ({
+    days,
+    selected,
+    onSelect,
+}) => {
     const max = Math.max(...days.map(d => d.ms), 1);
     return (
-        <View style={styles.row} accessibilityLabel={days.map(d => `${d.label} ${formatTime(d.ms)}`).join(', ')}>
+        <View style={styles.row}>
             {days.map((d, i) => (
-                <Column key={i} ms={d.ms} max={max} label={d.label} today={i === days.length - 1} index={i} />
+                <Column key={i} day={d} max={max} index={i} selected={i === selected} onPress={() => onSelect(i)} />
             ))}
         </View>
     );
@@ -45,34 +68,32 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        height: HEIGHT + 56,
+        height: HEIGHT + 60,
     },
     col: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'flex-end',
+        height: '100%',
     },
     bar: {
-        width: '62%',
-        borderWidth: stroke,
-        borderColor: palette.ink,
-        borderRadius: 10,
+        width: 18,
+        borderRadius: 9,
+    },
+    value: {
+        fontFamily: font.bodyBold,
+        fontSize: 11,
+        color: palette.tomato,
+        marginBottom: 6,
     },
     label: {
         fontFamily: font.mono,
         fontSize: 11,
-        color: palette.inkSoft,
+        color: palette.inkFaint,
         marginTop: 8,
     },
-    labelToday: {
+    labelOn: {
         color: palette.ink,
-    },
-    todayValue: {
-        fontFamily: font.bodyBold,
-        fontSize: 12,
-        color: palette.ink,
-        marginBottom: 6,
     },
 });
 

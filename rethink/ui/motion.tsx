@@ -45,7 +45,7 @@ export function Rise({
       t.setValue(1)
       return
     }
-    Animated.spring(t, { toValue: 1, delay, useNativeDriver: true, speed: 9, bounciness: 6 }).start()
+    Animated.spring(t, { toValue: 1, delay, useNativeDriver: true, speed: 8, bounciness: 2 }).start()
   }, [reduce, delay, t])
 
   return (
@@ -221,5 +221,123 @@ export function Squish({
     <Pressable {...rest} onPressIn={(e) => { to(scaleTo); rest.onPressIn?.(e) }} onPressOut={(e) => { to(1); rest.onPressOut?.(e) }}>
       <Animated.View style={[style, { transform: [{ scale: s }] }]}>{children}</Animated.View>
     </Pressable>
+  )
+}
+
+// ---- Poster pieces -------------------------------------------------------------------------------
+
+/** Drops in from above and swings into its tilt, like a card tossed onto a table. */
+export function Drop({
+  children,
+  delay = 0,
+  tilt = 0,
+  style,
+}: {
+  children: React.ReactNode
+  delay?: number
+  tilt?: number
+  style?: StyleProp<ViewStyle>
+}) {
+  const reduce = useReduceMotion()
+  const t = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (reduce) {
+      t.setValue(1)
+      return
+    }
+    Animated.spring(t, { toValue: 1, delay, useNativeDriver: true, speed: 6, bounciness: 9 }).start()
+  }, [reduce, delay, t])
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: t.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1, 1] }),
+          transform: [
+            { translateY: t.interpolate({ inputRange: [0, 1], outputRange: [-90, 0] }) },
+            { rotate: t.interpolate({ inputRange: [0, 1], outputRange: [`${tilt * 4 + (tilt >= 0 ? 8 : -8)}deg`, `${tilt}deg`] }) },
+            { scale: t.interpolate({ inputRange: [0, 1], outputRange: [1.15, 1] }) },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  )
+}
+
+/** Endless gentle bob, so resting cards feel alive. `phase` (0–1) offsets neighbours. */
+export function Float({
+  children,
+  amplitude = 4,
+  duration = 3200,
+  phase = 0,
+  style,
+}: {
+  children: React.ReactNode
+  amplitude?: number
+  duration?: number
+  phase?: number
+  style?: StyleProp<ViewStyle>
+}) {
+  const reduce = useReduceMotion()
+  const t = useRef(new Animated.Value(phase)).current
+
+  useEffect(() => {
+    if (reduce) return
+    const half = duration / 2
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(t, { toValue: 1, duration: half * (1 - phase) + 1, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(t, { toValue: 0, duration: half, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(t, { toValue: phase, duration: half * phase + 1, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [reduce, duration, phase, t])
+
+  return (
+    <Animated.View
+      style={[style, { transform: [{ translateY: t.interpolate({ inputRange: [0, 1], outputRange: [-amplitude, amplitude] }) }] }]}
+    >
+      {children}
+    </Animated.View>
+  )
+}
+
+/** Highlighter stroke that sweeps in left-to-right behind its sibling content. */
+export function HighlightSweep({
+  color,
+  delay = 0,
+  style,
+}: {
+  color: string
+  delay?: number
+  style?: StyleProp<ViewStyle>
+}) {
+  const reduce = useReduceMotion()
+  const t = useRef(new Animated.Value(reduce ? 1 : 0)).current
+
+  useEffect(() => {
+    if (reduce) {
+      t.setValue(1)
+      return
+    }
+    t.setValue(0)
+    Animated.timing(t, { toValue: 1, duration: 650, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
+  }, [reduce, delay, t])
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        { position: 'absolute', backgroundColor: color, transformOrigin: 'left center' },
+        style,
+        { transform: [{ scaleX: t }] },
+      ]}
+    />
   )
 }
