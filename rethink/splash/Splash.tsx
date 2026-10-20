@@ -1,171 +1,151 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import React from 'react'
-import { color } from '../constant/color'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../navigation/navigationTypes'
-
+import { Screen, Txt, Card, Sticker, IconTile, PopButton, Toggle } from '../ui/kit'
+import { palette, font } from '../ui/theme'
 
 export default function Splash() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     return (
-        <SafeAreaView style={styles.container}>
-            <Text style={styles.heading}>
-                <Text style={styles.headingHighlight}>Re</Text>Think
-            </Text>
-
-            <View style={styles.descriptionContainer}>
-                <Text style={styles.header}>Take control of your <Text style={styles.headingHighlight}>screen time</Text></Text>
-                <Text style={styles.description}>
-                    Block distractions and create space to think before you open apps.
+        <Screen style={styles.container}>
+            <View style={styles.brandRow}>
+                <Text style={styles.wordmark}>
+                    rethink<Text style={{ color: palette.tomato }}>.</Text>
                 </Text>
-
+                <Sticker text="for humans" tone="lilac" tilt={6} />
             </View>
 
-            <View style={styles.visualWrapper}>
-                <View style={styles.glowLayer1} />
-                <View style={styles.glowLayer2} />
+            {/* A loose pile of the three things the app does. */}
+            <View style={styles.collage} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <Card tone="sun" style={[styles.tile, styles.tileTime]}>
+                    <Txt v="label" style={styles.inkLabel}>Screen time</Txt>
+                    <Text style={styles.bigNumber}>2h 14m</Text>
+                    <Txt v="small" style={styles.inkSmall}>where did the evening go?</Txt>
+                </Card>
 
-                <Image
-                    style={styles.image}
-                    source={require('../assets/1.jpg')}
+                <Card tone="tomato" style={[styles.tile, styles.tilePause]}>
+                    <View style={styles.row}>
+                        <IconTile icon="logo-instagram" tone="card" size={36} />
+                        <View style={{ marginLeft: 10 }}>
+                            <Txt v="h3">Hold on…</Txt>
+                            <Txt v="small" style={styles.inkSmall}>breathe in, then decide</Txt>
+                        </View>
+                    </View>
+                </Card>
+
+                <Card tone="mint" style={[styles.tile, styles.tileFocus]}>
+                    <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                        <View>
+                            <Txt v="label" style={styles.inkLabel}>Focus</Txt>
+                            <Txt v="h2">9:00 – 17:00</Txt>
+                        </View>
+                        <Toggle value onValueChange={() => { }} tone="card" />
+                    </View>
+                </Card>
+
+                <Sticker text="no doomscroll" tone="cobalt" tilt={-8} style={styles.floatSticker} />
+            </View>
+
+            <View>
+                <Text style={styles.headline}>
+                    Pause before{'\n'}you <Text style={styles.highlight}>{'\u2009'}scroll{'\u2009'}</Text>.
+                </Text>
+                <Txt style={styles.body}>
+                    Rethink puts a short breath in front of the apps that eat your day, and shows you where the hours
+                    actually go.
+                </Txt>
+                <PopButton
+                    title="Let's go"
+                    icon="arrow-forward"
+                    tone="ink"
+                    onPress={() => navigation.replace('MainTab')}
                 />
             </View>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.lines}>
-                    <View style={styles.line} />
-                    <View style={styles.line} />
-                    <View style={styles.line} />
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => navigation.replace('MainTab')} style={styles.button}>
-
-                    <Text style={styles.buttonText}>Next</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+        </Screen>
     )
 }
 
-
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: color.black,
+        paddingHorizontal: 24,
+        paddingBottom: 28,
+        justifyContent: 'space-between',
+    },
+    brandRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-evenly',
+        justifyContent: 'space-between',
+        marginTop: 12,
     },
-
-    heading: {
-        fontSize: 26,
-        fontWeight: '700',
-        color: color.white,
-    },
-
-    headingHighlight: {
-        color: color.primary,
-    },
-
-    descriptionContainer: {
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-
-    header: {
+    wordmark: {
+        fontFamily: font.display,
         fontSize: 30,
-        fontWeight: '700',
-        color: color.white,
-        textAlign: 'center',
+        color: palette.ink,
+        letterSpacing: -1,
     },
 
-    description: {
-        fontSize: 16,
-        color: color.secondary,
-        textAlign: 'center',
-        marginTop: 4,
+    collage: {
+        height: 320,
+        marginVertical: 8,
     },
-
-
-    visualWrapper: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        marginVertical: 20,
-    },
-
-    glowLayer1: {
+    tile: {
         position: 'absolute',
-        width: 380,
-        height: 380,
-        borderRadius: 190,
-        backgroundColor: '#3f4a45',
-        opacity: 0.18,
-
-        shadowColor: '#3f4a45',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 120,
-
-        elevation: 1,
     },
-
-    glowLayer2: {
+    tileTime: {
+        top: 8,
+        left: 0,
+        width: '62%',
+        transform: [{ rotate: '-5deg' }],
+    },
+    tilePause: {
+        top: 118,
+        right: 0,
+        width: '64%',
+        transform: [{ rotate: '4deg' }],
+    },
+    tileFocus: {
+        bottom: 6,
+        left: 8,
+        width: '70%',
+        transform: [{ rotate: '-2deg' }],
+    },
+    floatSticker: {
         position: 'absolute',
-        width: 260,
-        height: 260,
-        borderRadius: 130,
-        backgroundColor: '#4b5a54',
-        opacity: 0.25,
-
-        shadowColor: '#4b5a54',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.7,
-        shadowRadius: 80,
-
-        elevation: 2,
+        top: 20,
+        right: 12,
     },
-
-    image: {
-        width: '80%',
-        height: 200,
-        resizeMode: 'contain',
-        zIndex: 10,
-    },
-
-
-    buttonContainer: {
+    row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '90%',
         alignItems: 'center',
     },
-
-    lines: {
-        flexDirection: 'row',
-        width: 50,
-        justifyContent: 'space-between',
+    inkLabel: { color: palette.ink },
+    inkSmall: { color: palette.ink },
+    bigNumber: {
+        fontFamily: font.display,
+        fontSize: 40,
+        lineHeight: 46,
+        color: palette.ink,
+        letterSpacing: -1,
+        marginVertical: 2,
     },
 
-    line: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: color.secondary,
+    headline: {
+        fontFamily: font.display,
+        fontSize: 44,
+        lineHeight: 50,
+        color: palette.ink,
+        letterSpacing: -1.5,
     },
-
-    button: {
-        backgroundColor: color.primary,
-        paddingVertical: 10,
-        paddingHorizontal: 18,
-        borderRadius: 8,
+    highlight: {
+        backgroundColor: palette.sun,
     },
-
-    buttonText: {
-        color: color.black,
+    body: {
+        marginTop: 12,
+        marginBottom: 24,
         fontSize: 16,
-        fontWeight: '700',
+        lineHeight: 23,
     },
 })

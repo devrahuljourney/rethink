@@ -1,0 +1,13 @@
+<resources>
+
+    <!-- Same as values/GateTheme, plus dark navigation-bar icons (API 27+) on the paper background. -->
+    <style name="GateTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/gate_background</item>
+        <item name="android:statusBarColor">@color/gate_background</item>
+        <item name="android:navigationBarColor">@color/gate_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+</resources>

@@ -1,32 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { color } from '../../constant/color';
-import UsageBarChart from './components/UsageBarChart';
+import WeekColumns from './components/WeekColumns';
 import InterventionToggle from './components/InterventionToggle';
 import { queryUsage } from '../../services/usage/usageNative';
 import { getStartOfDay, formatTime } from '../../utils/timeUtils';
-import InsightCard from './components/InsightCard';
-import LinearGradient from 'react-native-linear-gradient';
 import { useAppLimits } from '../../context/AppLimitContext';
 import { useUsage } from '../../context/UsageContext';
-import { getCategoryColor, getCategoryIcon } from '../../utils/categoryMapper';
+import { getCategoryIcon, getCategoryTone } from '../../utils/categoryMapper';
+import { Screen, TopBar, Txt, Sticker, IconTile, PopButton, Meter } from '../../ui/kit';
+import { CountUp, Rise } from '../../ui/motion';
+import { palette, font, stroke, TAB_BAR_SPACE } from '../../ui/theme';
 
-const { width } = Dimensions.get('window');
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+type DayUsage = { label: string; ms: number };
 
 const AppDetails = () => {
     const route = useRoute<any>();
     const navigation = useNavigation<any>();
     const { packageName } = route.params;
 
-    const { getLimitStatus, addLimit, deleteLimit } = useAppLimits();
-    const { getAppCategory } = useUsage();
+    const { getLimitStatus } = useAppLimits();
+    const { getAppCategory, usageData } = useUsage();
 
-    const [usageHistory, setUsageHistory] = useState<{ value: number; label: string }[]>([]);
+    const [week, setWeek] = useState<DayUsage[]>([]);
     const [loading, setLoading] = useState(true);
-    const [todayUsage, setTodayUsage] = useState<number>(0);
 
     useEffect(() => {
         fetchHistory();
@@ -35,11 +34,10 @@ const AppDetails = () => {
     const fetchHistory = async () => {
         setLoading(true);
         try {
-            const history = [];
-            const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const history: DayUsage[] = [];
             const today = new Date();
 
-            // We'll fetch for the last 7 days
+            // Last 7 days, oldest first; the final entry is today so far.
             for (let i = 6; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(today.getDate() - i);
@@ -48,17 +46,12 @@ const AppDetails = () => {
 
                 const stats = await queryUsage(start, end);
                 const appStats = stats.find(app => app.packageName === packageName);
-                const usageMs = appStats ? appStats.totalTimeInForeground : 0;
-
-                const dayIndex = date.getDay();
                 history.push({
-                    value: parseFloat((usageMs / (1000 * 60 * 60)).toFixed(1)), // Hours
-                    label: labels[dayIndex]
+                    label: DAY_LABELS[date.getDay()],
+                    ms: appStats ? appStats.totalTimeInForeground : 0,
                 });
-
-                if (i === 0) setTodayUsage(usageMs);
             }
-            setUsageHistory(history);
+            setWeek(history);
         } catch (error) {
             console.error('Failed to fetch app history:', error);
         } finally {
@@ -66,369 +59,181 @@ const AppDetails = () => {
         }
     };
 
+    const category = getAppCategory(packageName);
+    const appName = usageData.find(a => a.packageName === packageName)?.appName || packageName.split('.').pop();
+    const status = getLimitStatus(packageName);
+
+    const todayMs = week[week.length - 1]?.ms ?? 0;
+    const weekTotal = week.reduce((sum, d) => sum + d.ms, 0);
+    const previous = week.slice(0, -1);
+    const usualMs = previous.length ? previous.reduce((sum, d) => sum + d.ms, 0) / previous.length : 0;
+    const busiest = week.reduce<DayUsage | null>((top, d) => (!top || d.ms > top.ms ? d : top), null);
+
+    const renderTodaySticker = () => {
+        if (usualMs <= 0) return null;
+        const diff = ((todayMs - usualMs) / usualMs) * 100;
+        if (Math.abs(diff) < 5) return <Sticker text="about usual" tone="lilac" tilt={-4} delay={450} />;
+        return diff > 0
+            ? <Sticker text={`${diff.toFixed(0)}% over usual`} icon="arrow-up" tone="tomato" tilt={-4} delay={450} />
+            : <Sticker text={`${Math.abs(diff).toFixed(0)}% under usual`} icon="arrow-down" tone="mint" tilt={-4} delay={450} />;
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={color.white} />
-                </TouchableOpacity>
-                <Text style={styles.title}>App Details</Text>
-            </View>
+        <Screen>
+            <TopBar title="" onBack={() => navigation.goBack()} />
 
-            <ScrollView
-                style={styles.content}
-                contentContainerStyle={styles.contentContainer}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.appHeader}>
-                    <LinearGradient
-                        colors={[color.primary, '#6C47FF']}
-                        style={styles.iconPlaceholder}
-                    >
-                        <Text style={styles.iconText}>{packageName.charAt(0).toUpperCase()}</Text>
-                    </LinearGradient>
+            <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }} showsVerticalScrollIndicator={false}>
+                <Rise style={styles.appHeader}>
+                    <IconTile icon={getCategoryIcon(category)} tone={getCategoryTone(category)} size={64} />
                     <View style={styles.appInfo}>
-                        <Text style={styles.appName}>{packageName.split('.').pop()}</Text>
-                        <Text style={styles.packageName} numberOfLines={1}>{packageName}</Text>
-
-                        {(() => {
-                            const category = getAppCategory(packageName);
-                            return (
-                                <View style={[styles.categoryBadgeDetail, { backgroundColor: `${getCategoryColor(category)}20` }]}>
-                                    <Ionicons name={getCategoryIcon(category)} size={12} color={getCategoryColor(category)} />
-                                    <Text style={[styles.categoryTextDetail, { color: getCategoryColor(category) }]}>
-                                        {category}
-                                    </Text>
-                                </View>
-                            );
-                        })()}
+                        <Txt v="h1" style={styles.appName} numberOfLines={2}>{appName}</Txt>
+                        <Text style={styles.packageName} numberOfLines={1}>{category} · {packageName}</Text>
                     </View>
-                </View>
+                </Rise>
 
                 {loading ? (
                     <View style={styles.loadingContainer}>
-                        <ActivityIndicator color={color.primary} size="large" />
-                        <Text style={styles.loadingText}>Analyzing usage patterns...</Text>
+                        <ActivityIndicator color={palette.ink} size="large" />
+                        <Txt style={{ marginTop: 12 }}>Counting the last 7 days…</Txt>
                     </View>
                 ) : (
                     <>
-                        <View style={styles.todayStats}>
-                            <Text style={styles.statLabel}>Today's Usage</Text>
-                            <Text style={styles.statValue}>{formatTime(todayUsage)}</Text>
+                        <View style={[styles.section, { marginTop: 8 }]}>
+                            <Rise delay={60}>
+                                <Txt v="label">Today so far</Txt>
+                            </Rise>
+                            <Rise delay={100}>
+                                <CountUp value={todayMs} format={n => formatTime(n)} style={styles.todayValue} />
+                            </Rise>
+                            {renderTodaySticker()}
                         </View>
 
-                        {(() => {
-                            const status = getLimitStatus(packageName);
-                            return (
-                                <View style={styles.limitSection}>
-                                    <View style={styles.limitHeader}>
-                                        <Text style={styles.limitTitle}>Daily Time Limit</Text>
-                                        <TouchableOpacity
-                                            onPress={() => navigation.navigate('AppLimits', { packageName })}
-                                            style={styles.limitAction}
-                                        >
-                                            <Text style={styles.limitActionText}>
-                                                {status ? 'Edit' : 'Set Limit'}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
+                        <Rise delay={180} style={styles.section}>
+                            <Txt v="h2" style={styles.sectionTitle}>Last 7 days</Txt>
+                            <WeekColumns days={week} />
+                        </Rise>
 
-                                    {status ? (
-                                        <View style={styles.limitStatusCard}>
-                                            <View style={styles.limitBarLarge}>
-                                                <View
-                                                    style={[
-                                                        styles.limitProgressLarge,
-                                                        {
-                                                            width: `${Math.min(100, status.percentageUsed)}%`,
-                                                            backgroundColor: status.isWarning ? '#FF9500' : color.primary
-                                                        }
-                                                    ]}
-                                                />
-                                            </View>
-                                            <View style={styles.limitInfoRow}>
-                                                <Text style={styles.limitInfoText}>
-                                                    {Math.round(status.percentageUsed)}% used
-                                                </Text>
-                                                <Text style={styles.limitInfoText}>
-                                                    {formatTime(status.limitMs)} total
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : (
-                                        <Text style={styles.noLimitText}>No daily limit set for this app.</Text>
-                                    )}
+                        <Rise delay={240} style={styles.section}>
+                            <View style={styles.stats}>
+                                <View style={styles.stat}>
+                                    <Txt v="label">Daily average</Txt>
+                                    <Text style={styles.statValue}>{formatTime(weekTotal / 7)}</Text>
                                 </View>
-                            );
-                        })()}
-
-                        <UsageBarChart
-                            data={usageHistory}
-                            title="Weekly Usage (hours)"
-                        />
-
-                        <InterventionToggle packageName={packageName} />
-
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Premium Insights</Text>
-                            <View style={styles.premiumBadge}>
-                                <Text style={styles.premiumBadgeText}>PRO</Text>
+                                {busiest && busiest.ms > 0 && (
+                                    <View style={styles.stat}>
+                                        <Txt v="label">Heaviest day</Txt>
+                                        <Text style={styles.statValue}>{busiest.label}</Text>
+                                        <Txt v="small">{formatTime(busiest.ms)}</Txt>
+                                    </View>
+                                )}
                             </View>
-                        </View>
+                        </Rise>
 
-                        <InsightCard
-                            icon="flash-outline"
-                            title="Focus Score"
-                            value={todayUsage > 1000 * 60 * 60 ? "32/100" : "82/100"}
-                            subtitle={todayUsage > 1000 * 60 * 60 ? "Heavy usage detected. Take a break!" : "Great job staying focused today!"}
-                            type={todayUsage > 1000 * 60 * 60 ? "negative" : "positive"}
-                        />
+                        <Rise delay={300} style={styles.section}>
+                            <View style={styles.limitHeader}>
+                                <Txt v="h2">Daily limit</Txt>
+                                <PopButton
+                                    small
+                                    tone={status ? 'card' : 'mint'}
+                                    title={status ? 'Change' : 'Set a limit'}
+                                    onPress={() => navigation.navigate('AppLimits', { packageName })}
+                                />
+                            </View>
+                            {status ? (
+                                <>
+                                    <Meter pct={status.percentageUsed} tone={status.isWarning ? 'tomato' : 'mint'} height={16} />
+                                    <View style={styles.limitInfoRow}>
+                                        <Text style={styles.mono}>{Math.round(status.percentageUsed)}% used</Text>
+                                        <Text style={styles.mono}>limit {formatTime(status.limitMs)}</Text>
+                                    </View>
+                                </>
+                            ) : (
+                                <Txt>No limit yet. Set one and Rethink steps in once the time is up.</Txt>
+                            )}
+                        </Rise>
 
-                        <InsightCard
-                            icon="time-outline"
-                            title="Peak Usage"
-                            value="8:00 PM - 10:00 PM"
-                            subtitle="Dopamine seeking behavior detected in evenings."
-                            type="neutral"
-                        />
-
-                        <InsightCard
-                            icon="trending-down-outline"
-                            title="Digital Fatigue"
-                            value="Low"
-                            subtitle="Usage is well distributed throughout the day."
-                            type="positive"
-                        />
-
-                        <View style={styles.tipCard}>
-                            <Ionicons name="bulb-outline" size={24} color={color.primary} />
-                            <Text style={styles.tipText}>
-                                Enabling Smart Intervention helps you stay mindful of your digital wellbeing.
-                            </Text>
-                        </View>
+                        <Rise delay={360}>
+                            <InterventionToggle packageName={packageName} />
+                        </Rise>
                     </>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: color.black,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    title: {
-        fontSize: 20,
-        color: color.white,
-        fontWeight: '700',
-    },
-    content: {
-        flex: 1,
-    },
-    contentContainer: {
-        alignItems: 'center',
-        paddingTop: 40,
-    },
-    iconPlaceholder: {
-        width: 80,
-        height: 80,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-        elevation: 10,
-        shadowColor: color.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-    },
-    iconText: {
-        color: color.white,
-        fontSize: 32,
-        fontWeight: '800',
-    },
-    appName: {
-        color: color.white,
-        fontSize: 24,
-        fontWeight: '800',
-        textTransform: 'capitalize',
-    },
-    packageName: {
-        color: color.secondary,
-        fontSize: 14,
-        marginTop: 4,
-    },
-    categoryBadgeDetail: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        marginTop: 8,
-        gap: 4,
-    },
-    categoryTextDetail: {
-        fontSize: 11,
-        fontWeight: '700',
-    },
     appHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingBottom: 24,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
     },
     appInfo: {
         flex: 1,
         marginLeft: 16,
     },
+    appName: {
+        textTransform: 'capitalize',
+    },
+    packageName: {
+        fontFamily: font.mono,
+        fontSize: 11,
+        color: palette.inkSoft,
+        marginTop: 2,
+    },
     loadingContainer: {
         padding: 60,
         alignItems: 'center',
     },
-    loadingText: {
-        color: color.secondary,
-        marginTop: 16,
-        fontSize: 14,
+    section: {
+        marginHorizontal: 20,
+        marginBottom: 34,
     },
-    todayStats: {
-        width: width - 48,
-        marginBottom: 24,
-        backgroundColor: '#1E1E1E',
-        padding: 24,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
-        alignItems: 'center',
+    sectionTitle: {
+        marginBottom: 6,
     },
-    limitSection: {
-        width: width - 48,
-        marginBottom: 24,
-        backgroundColor: '#1E1E1E',
-        padding: 24,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+    todayValue: {
+        fontFamily: font.display,
+        fontSize: 72,
+        lineHeight: 78,
+        letterSpacing: -2.5,
+        color: palette.ink,
+        marginTop: 4,
+        marginBottom: 8,
+    },
+    stats: {
+        flexDirection: 'row',
+        gap: 20,
+    },
+    stat: {
+        flex: 1,
+        paddingTop: 12,
+        borderTopWidth: stroke,
+        borderColor: palette.ink,
+    },
+    statValue: {
+        fontFamily: font.display,
+        fontSize: 30,
+        lineHeight: 36,
+        color: palette.ink,
+        marginTop: 4,
     },
     limitHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    limitTitle: {
-        color: color.white,
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    limitAction: {
-        paddingVertical: 4,
-    },
-    limitActionText: {
-        color: color.primary,
-        fontSize: 14,
-        fontWeight: '700',
-    },
-    limitStatusCard: {
-        width: '100%',
-    },
-    limitBarLarge: {
-        width: '100%',
-        height: 12,
-        backgroundColor: '#2A2A2A',
-        borderRadius: 6,
-        overflow: 'hidden',
-        marginBottom: 12,
-    },
-    limitProgressLarge: {
-        height: '100%',
-        borderRadius: 6,
+        justifyContent: 'space-between',
+        marginBottom: 14,
     },
     limitInfoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginTop: 10,
     },
-    limitInfoText: {
-        color: color.secondary,
+    mono: {
+        fontFamily: font.mono,
         fontSize: 12,
-        fontWeight: '600',
-    },
-    noLimitText: {
-        color: '#555',
-        fontSize: 14,
-        fontStyle: 'italic',
-    },
-    statLabel: {
-        color: color.secondary,
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-    },
-    statValue: {
-        color: color.white,
-        fontSize: 32,
-        fontWeight: '800',
-    },
-    tipCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 24,
-        marginTop: 8,
-        marginBottom: 40,
-        backgroundColor: 'rgba(52, 199, 89, 0.05)',
-        padding: 20,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(52, 199, 89, 0.1)',
-    },
-    tipText: {
-        color: color.secondary,
-        fontSize: 13,
-        marginLeft: 12,
-        flex: 1,
-        lineHeight: 18,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        paddingHorizontal: 24,
-        marginTop: 24,
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        color: color.white,
-        fontSize: 18,
-        fontWeight: '700',
-        marginRight: 8,
-    },
-    premiumBadge: {
-        backgroundColor: 'rgba(167, 139, 255, 0.2)',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(167, 139, 255, 0.4)',
-    },
-    premiumBadgeText: {
-        color: '#A78BFF',
-        fontSize: 10,
-        fontWeight: '800',
+        color: palette.ink,
     },
 });
 

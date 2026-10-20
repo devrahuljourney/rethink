@@ -1,241 +1,217 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import React from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { color } from '../../constant/color';
 import { useFocusMode } from '../../context/FocusModeContext';
-import { useUsage } from '../../context/UsageContext';
+import { FocusMode } from '../../types/appLimits';
 import GuardStatusBanner from '../Intervention/GuardStatusBanner';
+import { Rise } from '../../ui/motion';
+import { Screen, Txt, Card, Sticker, PopButton, Toggle, SectionLabel } from '../../ui/kit';
+import { palette, font, stroke, TAB_BAR_SPACE } from '../../ui/theme';
+
+const WEEK = [
+    { label: 'M', value: 1 },
+    { label: 'T', value: 2 },
+    { label: 'W', value: 3 },
+    { label: 'T', value: 4 },
+    { label: 'F', value: 5 },
+    { label: 'S', value: 6 },
+    { label: 'S', value: 0 },
+];
 
 const FocusModeScreen = () => {
     const navigation = useNavigation<any>();
     const { focusModes, toggleFocusMode } = useFocusMode();
-    const { usageData } = useUsage();
 
-    const [isGlobalEnabled, setIsGlobalEnabled] = useState(true);
+    const renderMode = (item: FocusMode, index: number) => {
+        const schedule = item.schedules?.[0];
+        const days = schedule?.days ?? [];
+        const blocked = item.blockedApps?.length || 0;
 
-    const renderFocusModeItem = ({ item }: { item: any }) => (
-        <View style={styles.modeCard}>
-            <View style={styles.modeHeader}>
-                <View>
-                    <Text style={styles.modeTitle}>{item.name || 'Custom Focus'}</Text>
-                    <Text style={styles.modeSubtitle}>
-                        {item.schedules?.[0]?.startTime || '09:00'} - {item.schedules?.[0]?.endTime || '17:00'}
+        return (
+            <Rise key={item.id} delay={160 + index * 80}>
+            <Card tone={item.enabled ? 'mint' : 'card'} padded={false} style={styles.modeCard}>
+                <View style={styles.modeBody}>
+                    <View style={styles.modeHeader}>
+                        <Txt v="h2" style={{ flex: 1 }} numberOfLines={1}>{item.name || 'Untitled'}</Txt>
+                        <Toggle
+                            value={item.enabled}
+                            onValueChange={(val) => toggleFocusMode(item.id, val)}
+                            tone="sun"
+                            label={`${item.name} on or off`}
+                        />
+                    </View>
+                    <Text style={styles.modeTime}>
+                        {schedule?.startTime || '09:00'}–{schedule?.endTime || '17:00'}
                     </Text>
+                    <View style={styles.days}>
+                        {WEEK.map((d, i) => {
+                            const on = days.includes(d.value);
+                            return (
+                                <View key={i} style={[styles.day, on && styles.dayOn]}>
+                                    <Text style={[styles.dayText, on && { color: palette.card }]}>{d.label}</Text>
+                                </View>
+                            );
+                        })}
+                    </View>
                 </View>
-                <Switch
-                    value={item.enabled}
-                    onValueChange={(val) => toggleFocusMode(item.id, val)}
-                    trackColor={{ false: '#333', true: color.primary }}
-                    thumbColor={color.white}
-                />
-            </View>
-            <View style={styles.modeStats}>
-                <Text style={styles.statsText}>{item.blockedApps?.length || 0} apps blocked</Text>
-                <TouchableOpacity
-                    style={styles.editButton}
+                <Pressable
+                    style={styles.modeFooter}
                     onPress={() => navigation.navigate('FocusModeDetail', { focusModeId: item.id })}
+                    accessibilityRole="button"
                 >
-                    <Text style={styles.editButtonText}>Edit Schedule</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+                    <Text style={styles.mono}>
+                        {blocked} app{blocked === 1 ? '' : 's'} on mute
+                    </Text>
+                    <Text style={styles.edit}>Edit</Text>
+                </Pressable>
+            </Card>
+            </Rise>
+        );
+    };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Focus Mode</Text>
-            </View>
+        <Screen>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <Rise style={styles.titleRow}>
+                    <Txt v="display">Focus</Txt>
+                    <Sticker text="quiet hours" tone="tomato" tilt={-6} style={{ marginLeft: 12 }} />
+                </Rise>
+                <Rise delay={60}>
+                    <Txt style={styles.intro}>
+                        Pick the apps that pull you away. During your hours they simply won't open.
+                    </Txt>
+                </Rise>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                <GuardStatusBanner />
-                <View style={styles.infoCard}>
-                    <Ionicons name="shield-checkmark-outline" size={32} color={color.primary} />
-                    <View style={styles.infoTextContainer}>
-                        <Text style={styles.infoTitle}>Stay Undisturbed</Text>
-                        <Text style={styles.infoSubtitle}>Focus mode blocks distracting apps during your scheduled deep work hours.</Text>
-                    </View>
+                <View style={{ marginHorizontal: -20 }}>
+                    <GuardStatusBanner />
                 </View>
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Your Focus Schedules</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() => navigation.navigate('FocusModeDetail')}
-                    >
-                        <Ionicons name="add" size={20} color={color.primary} />
-                        <Text style={styles.addButtonText}>Add New</Text>
-                    </TouchableOpacity>
-                </View>
+                <SectionLabel
+                    right={
+                        focusModes.length > 0 ? (
+                            <PopButton
+                                small
+                                tone="sun"
+                                title="New"
+                                icon="add"
+                                onPress={() => navigation.navigate('FocusModeDetail')}
+                            />
+                        ) : undefined
+                    }
+                >
+                    Your schedules
+                </SectionLabel>
 
                 {focusModes.length > 0 ? (
-                    <FlatList
-                        data={focusModes}
-                        renderItem={renderFocusModeItem}
-                        keyExtractor={item => item.id}
-                        scrollEnabled={false}
-                    />
+                    focusModes.map(renderMode)
                 ) : (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="cafe-outline" size={48} color="#333" style={{ marginBottom: 16 }} />
-                        <Text style={styles.emptyText}>No focus schedules yet.</Text>
-                        <TouchableOpacity
-                            style={styles.createButton}
+                    <Rise delay={160}>
+                    <Card style={styles.emptyState}>
+                        <Txt v="h1" style={{ textAlign: 'center' }}>No quiet hours yet.</Txt>
+                        <Txt style={styles.emptyText}>
+                            Start with work hours or bedtime. You can change it whenever.
+                        </Txt>
+                        <PopButton
+                            title="Make the first one"
+                            tone="tomato"
+                            icon="arrow-forward"
                             onPress={() => navigation.navigate('FocusModeDetail')}
-                        >
-                            <Text style={styles.createButtonText}>Create Your First Focus</Text>
-                        </TouchableOpacity>
-                    </View>
+                        />
+                    </Card>
+                    </Rise>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: color.black,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    title: {
-        fontSize: 20,
-        color: color.white,
-        fontWeight: '700',
-    },
     content: {
-        padding: 24,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: TAB_BAR_SPACE,
     },
-    infoCard: {
-        flexDirection: 'row',
-        backgroundColor: '#1E1E1E',
-        padding: 20,
-        borderRadius: 24,
-        marginBottom: 32,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
-    },
-    infoTextContainer: {
-        marginLeft: 16,
-        flex: 1,
-    },
-    infoTitle: {
-        color: color.white,
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 4,
-    },
-    infoSubtitle: {
-        color: color.secondary,
-        fontSize: 13,
-        lineHeight: 18,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        color: color.white,
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    addButton: {
+    titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    addButtonText: {
-        color: color.primary,
-        fontSize: 14,
-        fontWeight: '700',
-        marginLeft: 4,
+    intro: {
+        marginTop: 8,
+        marginBottom: 22,
     },
     modeCard: {
-        backgroundColor: '#1E1E1E',
-        padding: 20,
-        borderRadius: 20,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+        marginBottom: 14,
+        overflow: 'hidden',
+    },
+    modeBody: {
+        padding: 18,
     },
     modeHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        gap: 12,
     },
-    modeTitle: {
-        color: color.white,
-        fontSize: 16,
-        fontWeight: '700',
+    modeTime: {
+        fontFamily: font.display,
+        fontSize: 36,
+        lineHeight: 42,
+        letterSpacing: -1,
+        color: palette.ink,
+        marginTop: 6,
     },
-    modeSubtitle: {
-        color: color.secondary,
+    days: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 12,
+    },
+    day: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        borderWidth: stroke,
+        borderColor: palette.ink,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: palette.card,
+    },
+    dayOn: {
+        backgroundColor: palette.ink,
+    },
+    dayText: {
+        fontFamily: font.bodyBold,
         fontSize: 12,
-        marginTop: 2,
+        color: palette.ink,
     },
-    modeStats: {
+    modeFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: '#333',
-        paddingTop: 16,
+        borderTopWidth: stroke,
+        borderColor: palette.ink,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        backgroundColor: palette.card,
     },
-    statsText: {
-        color: color.secondary,
+    mono: {
+        fontFamily: font.mono,
         fontSize: 12,
-        fontWeight: '600',
+        color: palette.ink,
     },
-    editButton: {
-        paddingVertical: 4,
-    },
-    editButtonText: {
-        color: color.primary,
-        fontSize: 13,
-        fontWeight: '700',
+    edit: {
+        fontFamily: font.bodyBold,
+        fontSize: 14,
+        color: palette.ink,
+        textDecorationLine: 'underline',
     },
     emptyState: {
-        alignItems: 'center',
-        padding: 40,
-        backgroundColor: '#1A1A1A',
-        borderRadius: 24,
+        alignItems: 'stretch',
+        padding: 24,
         borderStyle: 'dashed',
-        borderWidth: 1,
-        borderColor: '#333',
     },
     emptyText: {
-        color: color.secondary,
-        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 6,
         marginBottom: 20,
-    },
-    createButton: {
-        backgroundColor: 'rgba(52, 199, 89, 0.1)',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 12,
-    },
-    createButtonText: {
-        color: color.primary,
-        fontSize: 14,
-        fontWeight: '700',
     },
 });
 

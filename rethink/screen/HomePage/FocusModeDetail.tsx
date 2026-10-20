@@ -3,17 +3,14 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
-    TextInput,
+    Pressable,
     Alert,
     ScrollView,
-    FlatList,
-    Switch,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { color } from '../../constant/color';
+import { Screen, TopBar, Txt, Card, Field, PopButton, Toggle, SectionLabel } from '../../ui/kit';
+import { palette, font, stroke, TAB_BAR_SPACE } from '../../ui/theme';
 import { useFocusMode } from '../../context/FocusModeContext';
 import { useUsage } from '../../context/UsageContext';
 import { FocusMode, FocusSchedule } from '../../types/appLimits';
@@ -54,7 +51,7 @@ const FocusModeDetail = () => {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            Alert.alert('Error', 'Please enter a name.');
+            Alert.alert('Needs a name', 'Call it something like "Work" or "Bedtime".');
             return;
         }
 
@@ -83,7 +80,7 @@ const FocusModeDetail = () => {
             }
             navigation.goBack();
         } catch (error) {
-            Alert.alert('Error', 'Failed to save focus mode.');
+            Alert.alert('Not saved', 'Something went wrong saving this schedule. Try again.');
         }
     };
 
@@ -91,8 +88,8 @@ const FocusModeDetail = () => {
         if (!existingMode) return;
 
         Alert.alert(
-            'Delete Focus Mode',
-            'Are you sure you want to remove this focus mode?',
+            'Delete schedule?',
+            `"${existingMode.name}" and its muted apps will be removed.`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -124,298 +121,214 @@ const FocusModeDetail = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={color.white} />
-                </TouchableOpacity>
-                <Text style={styles.title}>{existingMode ? 'Edit Focus' : 'New Focus'}</Text>
-                <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-                    <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-            </View>
+        <Screen>
+            <TopBar
+                title={existingMode ? 'Edit schedule' : 'New schedule'}
+                onBack={() => navigation.goBack()}
+                right={<PopButton small tone="mint" title="Save" onPress={handleSave} />}
+            />
 
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>NAME</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="Focus Name"
-                        placeholderTextColor="#666"
-                    />
-                </View>
+            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+                <SectionLabel>Name</SectionLabel>
+                <Field value={name} onChangeText={setName} placeholder="Work, Bedtime, Exam week…" />
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>SCHEDULE</Text>
+                <SectionLabel style={styles.gap}>When</SectionLabel>
+                <Card>
                     <View style={styles.timeRow}>
                         <View style={styles.timeField}>
-                            <Text style={styles.timeLabel}>Start</Text>
-                            <TextInput
-                                style={styles.timeInput}
+                            <Txt v="label">From</Txt>
+                            <Field
                                 value={startTime}
                                 onChangeText={setStartTime}
                                 placeholder="09:00"
-                                placeholderTextColor="#666"
+                                keyboardType="numbers-and-punctuation"
+                                maxLength={5}
+                                inputStyle={styles.timeInput}
+                                style={styles.timeBox}
                             />
                         </View>
+                        <Ionicons name="arrow-forward" size={22} color={palette.ink} style={{ marginTop: 22 }} />
                         <View style={styles.timeField}>
-                            <Text style={styles.timeLabel}>End</Text>
-                            <TextInput
-                                style={styles.timeInput}
+                            <Txt v="label">Until</Txt>
+                            <Field
                                 value={endTime}
                                 onChangeText={setEndTime}
                                 placeholder="17:00"
-                                placeholderTextColor="#666"
+                                keyboardType="numbers-and-punctuation"
+                                maxLength={5}
+                                inputStyle={styles.timeInput}
+                                style={styles.timeBox}
                             />
                         </View>
                     </View>
 
                     <View style={styles.daysRow}>
-                        {DAYS.map(day => (
-                            <TouchableOpacity
-                                key={day.value}
-                                style={[
-                                    styles.dayChip,
-                                    selectedDays.includes(day.value) && styles.dayChipActive
-                                ]}
-                                onPress={() => toggleDay(day.value)}
-                            >
-                                <Text style={[
-                                    styles.dayText,
-                                    selectedDays.includes(day.value) && styles.dayTextActive
-                                ]}>
-                                    {day.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                        {DAYS.map(day => {
+                            const on = selectedDays.includes(day.value);
+                            return (
+                                <Pressable
+                                    key={day.value}
+                                    style={[styles.dayChip, on && styles.dayChipActive]}
+                                    onPress={() => toggleDay(day.value)}
+                                    accessibilityRole="checkbox"
+                                    accessibilityState={{ checked: on }}
+                                >
+                                    <Text style={[styles.dayText, on && styles.dayTextActive]}>{day.label}</Text>
+                                </Pressable>
+                            );
+                        })}
                     </View>
-                </View>
+                </Card>
 
-                <View style={[styles.section, { flex: 1 }]}>
-                    <Text style={styles.sectionLabel}>BLOCKED APPS ({blockedApps.length})</Text>
-                    <View style={styles.searchBar}>
-                        <Ionicons name="search" size={18} color="#666" />
-                        <TextInput
-                            style={styles.searchInput}
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            placeholder="Search apps to block..."
-                            placeholderTextColor="#666"
-                        />
-                    </View>
+                <SectionLabel style={styles.gap}>{`Apps to mute · ${blockedApps.length}`}</SectionLabel>
+                <Field
+                    icon="search"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Find an app"
+                    autoCorrect={false}
+                    style={{ marginBottom: 12 }}
+                />
 
-                    <View style={styles.appList}>
-                        {filteredApps.slice(0, 10).map(app => (
-                            <TouchableOpacity
+                <Card padded={false} style={{ overflow: 'hidden' }}>
+                    {filteredApps.slice(0, 10).map((app, i, list) => {
+                        const muted = blockedApps.includes(app.packageName);
+                        return (
+                            <Pressable
                                 key={app.packageName}
-                                style={styles.appItem}
+                                style={[styles.appItem, muted && styles.appItemMuted, i === list.length - 1 && { borderBottomWidth: 0 }]}
                                 onPress={() => toggleAppBlock(app.packageName)}
                             >
                                 <View style={styles.appInfo}>
-                                    <Text style={styles.appName} numberOfLines={1}>
+                                    <Txt v="h3" numberOfLines={1} style={{ textTransform: 'capitalize' }}>
                                         {app.appName || app.packageName.split('.').pop()}
-                                    </Text>
-                                    <Text style={styles.packageName} numberOfLines={1}>
-                                        {app.packageName}
-                                    </Text>
+                                    </Txt>
+                                    <Text style={styles.packageName} numberOfLines={1}>{app.packageName}</Text>
                                 </View>
-                                <Switch
-                                    value={blockedApps.includes(app.packageName)}
+                                <Toggle
+                                    value={muted}
                                     onValueChange={() => toggleAppBlock(app.packageName)}
-                                    trackColor={{ false: '#333', true: color.primary }}
-                                    thumbColor={color.white}
+                                    tone="tomato"
+                                    label={`Mute ${app.appName || app.packageName}`}
                                 />
-                            </TouchableOpacity>
-                        ))}
-                        {filteredApps.length > 10 && (
-                            <Text style={styles.moreApps}>+ {filteredApps.length - 10} more apps found</Text>
-                        )}
-                    </View>
-                </View>
+                            </Pressable>
+                        );
+                    })}
+                    {filteredApps.length > 10 && (
+                        <Text style={styles.moreApps}>{filteredApps.length - 10} more · search to find them</Text>
+                    )}
+                    {filteredApps.length === 0 && (
+                        <Text style={styles.moreApps}>No app matches that.</Text>
+                    )}
+                </Card>
 
                 {existingMode && (
-                    <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                        <Text style={styles.deleteText}>Delete Focus Mode</Text>
-                    </TouchableOpacity>
+                    <Pressable style={styles.deleteButton} onPress={handleDelete} accessibilityRole="button">
+                        <Ionicons name="trash-outline" size={18} color={palette.tomato} />
+                        <Text style={styles.deleteText}>Delete this schedule</Text>
+                    </Pressable>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: color.black,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-        justifyContent: 'space-between',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 20,
-        color: color.white,
-        fontWeight: '700',
-    },
-    saveButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-    saveButtonText: {
-        color: color.primary,
-        fontSize: 16,
-        fontWeight: '700',
-    },
     content: {
-        padding: 24,
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: TAB_BAR_SPACE,
     },
-    section: {
-        marginBottom: 32,
-    },
-    sectionLabel: {
-        color: color.secondary,
-        fontSize: 12,
-        fontWeight: '700',
-        marginBottom: 12,
-        letterSpacing: 1,
-    },
-    input: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        padding: 16,
-        color: color.white,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+    gap: {
+        marginTop: 24,
     },
     timeRow: {
         flexDirection: 'row',
-        gap: 16,
-        marginBottom: 16,
+        alignItems: 'flex-start',
+        gap: 12,
+        marginBottom: 18,
     },
     timeField: {
         flex: 1,
+        gap: 6,
     },
-    timeLabel: {
-        color: color.secondary,
-        fontSize: 12,
-        marginBottom: 8,
+    timeBox: {
+        height: 64,
+        backgroundColor: palette.paper,
     },
     timeInput: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        padding: 16,
-        color: color.white,
-        fontSize: 16,
+        fontFamily: font.display,
+        fontSize: 28,
         textAlign: 'center',
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
     },
     daysRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     dayChip: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        borderWidth: stroke,
+        borderColor: palette.ink,
+        backgroundColor: palette.card,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
     },
     dayChipActive: {
-        backgroundColor: color.primary,
-        borderColor: color.primary,
+        backgroundColor: palette.ink,
     },
     dayText: {
-        color: color.secondary,
+        fontFamily: font.bodyBold,
+        color: palette.ink,
         fontSize: 14,
-        fontWeight: '700',
     },
     dayTextActive: {
-        color: color.black,
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        height: 50,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        color: color.white,
-        fontSize: 14,
-    },
-    appList: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 20,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#333',
+        color: palette.card,
     },
     appItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#333',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: stroke,
+        borderBottomColor: palette.ink,
+    },
+    appItemMuted: {
+        backgroundColor: palette.peach,
     },
     appInfo: {
         flex: 1,
-        marginRight: 10,
-    },
-    appName: {
-        color: color.white,
-        fontSize: 14,
-        fontWeight: '600',
+        marginRight: 12,
     },
     packageName: {
-        color: '#666',
+        fontFamily: font.mono,
+        color: palette.inkSoft,
         fontSize: 11,
-        marginTop: 2,
+        marginTop: 1,
     },
     moreApps: {
+        fontFamily: font.mono,
         textAlign: 'center',
-        padding: 12,
-        color: '#666',
+        padding: 14,
+        color: palette.inkSoft,
         fontSize: 12,
-        fontStyle: 'italic',
     },
     deleteButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 16,
-        padding: 16,
+        marginTop: 20,
+        padding: 14,
         gap: 8,
     },
     deleteText: {
-        color: '#FF3B30',
-        fontSize: 14,
-        fontWeight: '600',
-    }
+        fontFamily: font.bodyBold,
+        color: palette.tomato,
+        fontSize: 15,
+        textDecorationLine: 'underline',
+    },
 });
 
 export default FocusModeDetail;

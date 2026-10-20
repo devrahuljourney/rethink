@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react'
+import { StatusBar } from 'react-native'
 import BackgroundFetch from 'react-native-background-fetch';
 import RootNavigator from './navigation/RootNavigator';
 import { syncYesterdayUsage } from './services/syncService';
+import { palette } from './ui/theme';
 
 export default function App() {
     useEffect(() => {
@@ -30,6 +32,9 @@ export default function App() {
     }, []);
 
     return (
-        <RootNavigator />
+        <>
+            <StatusBar barStyle="dark-content" backgroundColor={palette.paper} />
+            <RootNavigator />
+        </>
     )
 }

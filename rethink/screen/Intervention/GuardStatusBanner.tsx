@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { color } from '../../constant/color';
+import { Squish } from '../../ui/motion';
+import { palette, font, radius, stroke } from '../../ui/theme';
 import { guardNative } from '../../services/guard/guardNative';
 import { useGuardStatus } from '../../utils/useGuardStatus';
 import PermissionManager from '../../utils/PermissionManager';
@@ -33,17 +34,16 @@ const GuardStatusBanner: React.FC = () => {
 
     return (
         <>
-            <TouchableOpacity style={styles.banner} onPress={handleFix} activeOpacity={0.85}>
-                <Ionicons name="warning-outline" size={22} color={WARNING} />
-                <View style={styles.text}>
-                    <Text style={styles.title}>Protection is off</Text>
-                    <Text style={styles.subtitle}>
-                        Limits, Focus Mode and Mindful Pause can't block apps until you turn on Rethink in
-                        Accessibility settings.
-                    </Text>
+            <Squish onPress={handleFix} accessibilityRole="button" style={styles.banner}>
+                <Ionicons name="warning" size={20} color={palette.ink} />
+                <Text style={styles.text} numberOfLines={2}>
+                    <Text style={styles.title}>Blocking is off. </Text>
+                    Turn Rethink on in Accessibility.
+                </Text>
+                <View style={styles.fix}>
+                    <Text style={styles.fixText}>Fix</Text>
                 </View>
-                <Text style={styles.action}>Fix</Text>
-            </TouchableOpacity>
+            </Squish>
             <AccessibilityDisclosure
                 visible={showDisclosure}
                 onAccept={handleAccept}
@@ -53,39 +53,41 @@ const GuardStatusBanner: React.FC = () => {
     );
 };
 
-const WARNING = '#FFB020';
-
 const styles = StyleSheet.create({
     banner: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
         marginHorizontal: 20,
         marginBottom: 16,
-        padding: 16,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 176, 32, 0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 176, 32, 0.35)',
+        paddingLeft: 14,
+        paddingRight: 8,
+        paddingVertical: 8,
+        borderRadius: radius.pill,
+        borderWidth: stroke,
+        borderColor: palette.ink,
+        backgroundColor: palette.peach,
     },
     text: {
         flex: 1,
+        fontFamily: font.body,
+        fontSize: 13,
+        lineHeight: 18,
+        color: palette.ink,
     },
     title: {
-        color: color.white,
-        fontSize: 15,
-        fontWeight: '700',
+        fontFamily: font.bodyBold,
     },
-    subtitle: {
-        color: '#C8CDCA',
-        fontSize: 12,
-        lineHeight: 17,
-        marginTop: 2,
+    fix: {
+        backgroundColor: palette.ink,
+        borderRadius: radius.pill,
+        paddingHorizontal: 14,
+        paddingVertical: 7,
     },
-    action: {
-        color: WARNING,
-        fontSize: 15,
-        fontWeight: '700',
+    fixText: {
+        fontFamily: font.bodyBold,
+        fontSize: 13,
+        color: palette.card,
     },
 });
 

@@ -1,3 +1,5 @@
 <resources>
-    <color name="gate_background">#080808</color>
+    <color name="paper">#F3EEE3</color>
+    <color name="ic_launcher_background">#FFDD3C</color>
+    <color name="gate_background">#F3EEE3</color>
 </resources>

@@ -1,4 +1,5 @@
 import { AppCategory } from '../types/appLimits';
+import { palette, Tone } from '../ui/theme';
 
 // Predefined category mappings based on package name patterns
 const categoryRules: Record<string, AppCategory> = {
@@ -115,25 +116,29 @@ export function getAppCategory(packageName: string): AppCategory {
 }
 
 /**
- * Gets a color for each category (for UI visualization)
+ * Poster colour for each category (fills icon tiles, which carry an ink outline)
  */
-export function getCategoryColor(category: AppCategory): string {
-    const colors: Record<AppCategory, string> = {
-        [AppCategory.SOCIAL]: '#FF6B9D',
-        [AppCategory.ENTERTAINMENT]: '#C77DFF',
-        [AppCategory.PRODUCTIVITY]: '#4CAF50',
-        [AppCategory.EDUCATION]: '#2196F3',
-        [AppCategory.COMMUNICATION]: '#00BCD4',
-        [AppCategory.GAMES]: '#FF9800',
-        [AppCategory.SHOPPING]: '#E91E63',
-        [AppCategory.NEWS]: '#607D8B',
-        [AppCategory.HEALTH]: '#8BC34A',
-        [AppCategory.FINANCE]: '#FFC107',
-        [AppCategory.UTILITIES]: '#9E9E9E',
-        [AppCategory.OTHER]: '#757575',
+export function getCategoryTone(category: AppCategory): Tone {
+    const tones: Record<AppCategory, Tone> = {
+        [AppCategory.SOCIAL]: 'tomato',
+        [AppCategory.ENTERTAINMENT]: 'lilac',
+        [AppCategory.PRODUCTIVITY]: 'mint',
+        [AppCategory.EDUCATION]: 'cobalt',
+        [AppCategory.COMMUNICATION]: 'sun',
+        [AppCategory.GAMES]: 'peach',
+        [AppCategory.SHOPPING]: 'tomato',
+        [AppCategory.NEWS]: 'paper',
+        [AppCategory.HEALTH]: 'mint',
+        [AppCategory.FINANCE]: 'sun',
+        [AppCategory.UTILITIES]: 'paper',
+        [AppCategory.OTHER]: 'paper',
     };
 
-    return colors[category];
+    return tones[category];
+}
+
+export function getCategoryColor(category: AppCategory): string {
+    return palette[getCategoryTone(category)];
 }
 
 /**

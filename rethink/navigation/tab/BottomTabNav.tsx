@@ -18,6 +18,7 @@ export default function BottomTabNav() {
 
   return (
     <Tab.Navigator
+      initialRouteName="FocusStack"
       tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -28,19 +29,19 @@ export default function BottomTabNav() {
       <Tab.Screen name="HomeStack" component={HomeStack} />
       <Tab.Screen
         name="CoachStack"
-        component={isAuthenticated ? CoachStack : AuthNavigator}
+        component={true ? CoachStack : AuthNavigator}
       />
       <Tab.Screen
         name="AppStack"
-        component={isAuthenticated ? AppStack : AuthNavigator}
+        component={true ? AppStack : AuthNavigator}
       />
       <Tab.Screen
         name="FocusStack"
-        component={isAuthenticated ? FocusStack : AuthNavigator}
+        component={true ? FocusStack : AuthNavigator}
       />
       <Tab.Screen
         name="SettingStack"
-        component={isAuthenticated ? SettingStack : AuthNavigator}
+        component={true ? SettingStack : AuthNavigator}
       />
     </Tab.Navigator>
   )

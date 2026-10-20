@@ -1,18 +1,19 @@
 import React, { useState, useMemo } from 'react'
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   FlatList,
-  TextInput,
   ScrollView,
+  RefreshControl,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import { showUsageAccessSettings } from '@brighthustle/react-native-usage-stats-manager'
 import { useNavigation } from '@react-navigation/native'
-import { color } from '../../constant/color'
+import { Screen, Txt, Field, Chip, Sticker, Card, PopButton } from '../../ui/kit'
+import { usePullRefresh } from '../../ui/usePullRefresh'
+import { palette, TAB_BAR_SPACE } from '../../ui/theme'
+import { Rise } from '../../ui/motion'
 import FilterTabs from './components/FilterTabs'
 import AppUsageItem from './components/AppUsageItem'
 import { useUsage } from '../../context/UsageContext'
@@ -26,12 +27,12 @@ export default function AppScreen() {
     activeRange,
     setActiveRange,
     refreshUsage,
-    isLoading,
     hasPermission,
     getAppCategory
   } = useUsage();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const pull = usePullRefresh(refreshUsage);
   const [selectedCategory, setSelectedCategory] = useState<AppCategory | 'ALL'>('ALL');
 
   const categories: (AppCategory | 'ALL')[] = [
@@ -58,26 +59,29 @@ export default function AppScreen() {
       .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground);
   }, [usageData, searchQuery, selectedCategory, getAppCategory]);
 
-  const renderHeader = () => (
+  // Built as an element (not a component) so the search field keeps focus while typing.
+  const header = (
     <View style={styles.header}>
-      <Text style={styles.title}>All Usage</Text>
-      <Text style={styles.subtitle}>{filteredAndSortedData.length} apps found</Text>
+      <Rise style={styles.titleRow}>
+        <Txt v="display">Apps</Txt>
+        <Sticker text={`${filteredAndSortedData.length} found`} tone="mint" tilt={-6} style={{ marginLeft: 12 }} />
+      </Rise>
 
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search apps..."
-          placeholderTextColor="#666"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#666" />
-          </TouchableOpacity>
-        )}
-      </View>
+      <Field
+        icon="search"
+        placeholder="Find an app"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        autoCorrect={false}
+        style={{ marginTop: 18 }}
+        right={
+          searchQuery.length > 0 ? (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={10} accessibilityLabel="Clear search">
+              <Ionicons name="close-circle" size={20} color={palette.ink} />
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       <ScrollView
         horizontal
@@ -85,176 +89,102 @@ export default function AppScreen() {
         style={styles.categoryScroll}
         contentContainerStyle={styles.categoryContainer}
       >
-        {categories.map((category) => (
-          <TouchableOpacity
+        {categories.map(category => (
+          <Chip
             key={category}
-            style={[
-              styles.categoryChip,
-              selectedCategory === category && styles.activeCategoryChip
-            ]}
+            label={category === 'ALL' ? 'All' : category}
+            active={selectedCategory === category}
             onPress={() => setSelectedCategory(category)}
-          >
-            <Text style={[
-              styles.categoryChipText,
-              selectedCategory === category && styles.activeCategoryChipText
-            ]}>
-              {category}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
 
-      <View style={styles.filterWrapper}>
-        <FilterTabs
-          activeRange={activeRange}
-          onRangeChange={(range: FilterRange) => setActiveRange(range)}
-        />
-      </View>
+      <FilterTabs
+        activeRange={activeRange}
+        onRangeChange={(range: FilterRange) => setActiveRange(range)}
+        style={{ marginTop: 16 }}
+      />
     </View>
   )
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       {hasPermission === false ? (
         <View style={styles.centerContent}>
-          <Text style={styles.errorText}>Permission required to view list</Text>
-          <TouchableOpacity style={styles.button} onPress={() => showUsageAccessSettings('')}>
-            <Text style={styles.buttonText}>Enable Access</Text>
-          </TouchableOpacity>
+          <Card style={{ padding: 22 }}>
+            <Txt v="h1">Nothing to list yet</Txt>
+            <Txt style={{ marginTop: 8, marginBottom: 20 }}>
+              Turn on Usage Access for Rethink and every app you use shows up here.
+            </Txt>
+            <PopButton title="Open Usage Access" tone="sun" icon="arrow-forward" onPress={() => showUsageAccessSettings('')} />
+          </Card>
         </View>
       ) : (
         <FlatList
           data={filteredAndSortedData}
           keyExtractor={(item) => item.packageName}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <AppUsageItem
               item={item}
+              index={index}
               onPress={() => navigation.navigate('AppDetails', { packageName: item.packageName })}
             />
           )}
-          ListHeaderComponent={renderHeader}
+          ListHeaderComponent={header}
           contentContainerStyle={styles.listContent}
-          refreshing={isLoading}
-          onRefresh={refreshUsage}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={pull.refreshing}
+              onRefresh={pull.onRefresh}
+              colors={[palette.ink]}
+              tintColor={palette.ink}
+              progressBackgroundColor={palette.mint}
+            />
+          }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color="#333" />
-              <Text style={styles.emptyText}>No matches found</Text>
+              <Txt v="h2">No app by that name</Txt>
+              <Txt style={{ marginTop: 4 }}>Try fewer letters, or switch to All.</Txt>
             </View>
           }
         />
       )}
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: color.black,
-  },
   header: {
-    padding: 24,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
-  title: {
-    fontSize: 28,
-    color: color.white,
-    fontWeight: '800',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: color.primary,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  searchContainer: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    marginTop: 20,
-    paddingHorizontal: 12,
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: color.white,
-    fontSize: 15,
-    height: '100%',
   },
   categoryScroll: {
-    marginTop: 16,
+    marginTop: 14,
+    marginHorizontal: -20,
   },
   categoryContainer: {
-    paddingRight: 24,
-  },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1E1E1E',
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  activeCategoryChip: {
-    backgroundColor: color.primary,
-    borderColor: color.primary,
-  },
-  categoryChipText: {
-    color: color.secondary,
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  activeCategoryChipText: {
-    color: color.black,
-    fontWeight: '700',
-  },
-  filterWrapper: {
-    marginTop: 20,
-    marginBottom: 8,
+    paddingHorizontal: 20,
+    gap: 8,
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: TAB_BAR_SPACE,
   },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    color: color.secondary,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 14,
-    backgroundColor: color.primary,
-  },
-  buttonText: {
-    color: color.black,
-    fontWeight: '700',
+    padding: 20,
+    paddingBottom: TAB_BAR_SPACE,
   },
   emptyContainer: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 48,
   },
-  emptyText: {
-    color: color.secondary,
-    marginTop: 16,
-    fontSize: 16,
-  }
 })

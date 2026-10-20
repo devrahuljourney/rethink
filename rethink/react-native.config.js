@@ -1,4 +1,6 @@
 // react-native.config.js
 module.exports = {
-  // assets: ['./node_modules/react-native-vector-icons/Fonts'],
+  // Custom fonts. Android already has copies in android/app/src/main/assets/fonts;
+  // run `npx react-native-asset` once to link them into the iOS project.
+  assets: ['./assets/fonts'],
 }

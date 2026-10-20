@@ -1,16 +1,19 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:statusBarColor">@color/paper</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
-    <!-- Gate: dark from the first frame so there is no white flash before Compose draws. -->
+    <!-- Gate: paper from the first frame so there is no flash before Compose draws. -->
     <style name="GateTheme" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/gate_background</item>
         <item name="android:statusBarColor">@color/gate_background</item>
         <item name="android:navigationBarColor">@color/gate_background</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 

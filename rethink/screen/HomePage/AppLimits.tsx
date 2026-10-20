@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Pressable } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { color } from '../../constant/color';
 import { useAppLimits } from '../../context/AppLimitContext';
-import { formatTime } from '../../utils/timeUtils';
+import { useUsage } from '../../context/UsageContext';
 import GuardStatusBanner from '../Intervention/GuardStatusBanner';
+import { Screen, TopBar, Txt, Card, Chip, PopButton, SectionLabel } from '../../ui/kit';
+import { palette, font, radius, stroke, TAB_BAR_SPACE } from '../../ui/theme';
+
+const PRESETS = [
+    { label: '15m', h: 0, m: 15 },
+    { label: '30m', h: 0, m: 30 },
+    { label: '1h', h: 1, m: 0 },
+    { label: '2h', h: 2, m: 0 },
+];
 
 const AppLimits = () => {
     const route = useRoute<any>();
     const navigation = useNavigation();
     const { packageName } = route.params || {};
     const { addLimit, updateLimit, deleteLimit, limits } = useAppLimits();
+    const { usageData } = useUsage();
+    const appName = usageData.find(a => a.packageName === packageName)?.appName || packageName?.split('.').pop() || 'this app';
 
     const existingLimit = limits.find(l => l.packageName === packageName);
 
@@ -29,7 +37,7 @@ const AppLimits = () => {
         const totalMs = (h * 60 * 60 * 1000) + (m * 60 * 1000);
 
         if (totalMs === 0) {
-            Alert.alert('Invalid Limit', 'Please set a limit greater than 0.');
+            Alert.alert('Zero minutes?', 'Pick at least one minute, or remove the limit instead.');
             return;
         }
 
@@ -46,7 +54,7 @@ const AppLimits = () => {
             }
             navigation.goBack();
         } catch (error) {
-            Alert.alert('Error', 'Failed to save limit.');
+            Alert.alert('Not saved', 'Something went wrong saving this limit. Try again.');
         }
     };
 
@@ -54,8 +62,8 @@ const AppLimits = () => {
         if (!existingLimit) return;
 
         Alert.alert(
-            'Remove Limit',
-            'Are you sure you want to remove the time limit for this app?',
+            'Remove limit?',
+            `${appName} will have no daily cap.`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -70,24 +78,21 @@ const AppLimits = () => {
         );
     };
 
+    const h = parseInt(hours) || 0;
+    const m = parseInt(minutes) || 0;
+
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={color.white} />
-                </TouchableOpacity>
-                <Text style={styles.title}>{existingLimit ? 'Edit Limit' : 'Set Limit'}</Text>
-            </View>
+        <Screen>
+            <TopBar title={existingLimit ? 'Change limit' : 'New limit'} onBack={() => navigation.goBack()} />
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <GuardStatusBanner />
-                <View style={styles.appCard}>
-                    <Text style={styles.appLabel}>App</Text>
-                    <Text style={styles.appValue}>{packageName?.split('.').pop() || 'Selected App'}</Text>
-                </View>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Daily Duration</Text>
+                <Txt v="display" style={styles.question}>
+                    How long on <Text style={styles.highlight}> {appName} </Text> each day?
+                </Txt>
+
+                <Card style={styles.timeCard}>
                     <View style={styles.timeInputs}>
                         <View style={styles.timeField}>
                             <TextInput
@@ -96,9 +101,12 @@ const AppLimits = () => {
                                 onChangeText={setHours}
                                 keyboardType="number-pad"
                                 maxLength={2}
+                                selectionColor={palette.cobalt}
+                                accessibilityLabel="Hours"
                             />
-                            <Text style={styles.timeLabel}>hours</Text>
+                            <Txt v="label">hours</Txt>
                         </View>
+                        <Text style={styles.colon}>:</Text>
                         <View style={styles.timeField}>
                             <TextInput
                                 style={styles.input}
@@ -106,137 +114,109 @@ const AppLimits = () => {
                                 onChangeText={setMinutes}
                                 keyboardType="number-pad"
                                 maxLength={2}
+                                selectionColor={palette.cobalt}
+                                accessibilityLabel="Minutes"
                             />
-                            <Text style={styles.timeLabel}>mins</Text>
+                            <Txt v="label">minutes</Txt>
                         </View>
                     </View>
+                </Card>
+
+                <SectionLabel style={{ marginTop: 18 }}>Quick picks</SectionLabel>
+                <View style={styles.presets}>
+                    {PRESETS.map(p => (
+                        <Chip
+                            key={p.label}
+                            label={p.label}
+                            tone="sun"
+                            active={h === p.h && m === p.m}
+                            onPress={() => {
+                                setHours(String(p.h));
+                                setMinutes(String(p.m));
+                            }}
+                            style={styles.preset}
+                        />
+                    ))}
                 </View>
 
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                    <Text style={styles.saveButtonText}>Save Limit</Text>
-                </TouchableOpacity>
+                <Txt v="small" style={{ marginTop: 18, marginBottom: 24 }}>
+                    When the time runs out, {appName} is blocked for the rest of the day.
+                </Txt>
+
+                <PopButton title="Save limit" tone="mint" onPress={handleSave} />
 
                 {existingLimit && (
-                    <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                        <Text style={styles.deleteButtonText}>Remove Limit</Text>
-                    </TouchableOpacity>
+                    <Pressable style={styles.deleteButton} onPress={handleDelete} accessibilityRole="button">
+                        <Text style={styles.deleteButtonText}>Remove limit</Text>
+                    </Pressable>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: color.black,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#1E1E1E',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    title: {
-        fontSize: 20,
-        color: color.white,
-        fontWeight: '700',
-    },
     content: {
-        padding: 24,
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: TAB_BAR_SPACE,
     },
-    appCard: {
-        backgroundColor: '#1E1E1E',
-        padding: 20,
-        borderRadius: 20,
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+    question: {
+        marginBottom: 20,
     },
-    appLabel: {
-        color: color.secondary,
-        fontSize: 12,
-        fontWeight: '600',
-        marginBottom: 4,
-        textTransform: 'uppercase',
-    },
-    appValue: {
-        color: color.white,
-        fontSize: 18,
-        fontWeight: '700',
+    highlight: {
+        backgroundColor: palette.sun,
         textTransform: 'capitalize',
     },
-    inputContainer: {
-        backgroundColor: '#1E1E1E',
-        padding: 20,
-        borderRadius: 20,
-        marginBottom: 32,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
-    },
-    inputLabel: {
-        color: color.white,
-        fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 20,
+    timeCard: {
+        paddingVertical: 22,
     },
     timeInputs: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
     timeField: {
         flex: 1,
         alignItems: 'center',
+        gap: 8,
+    },
+    colon: {
+        fontFamily: font.display,
+        fontSize: 44,
+        color: palette.ink,
+        marginTop: 8,
     },
     input: {
-        backgroundColor: '#2A2A2A',
-        width: '80%',
-        height: 60,
-        borderRadius: 12,
-        color: color.white,
-        fontSize: 24,
-        fontWeight: '800',
+        width: '86%',
+        height: 84,
+        borderRadius: radius.md,
+        borderWidth: stroke,
+        borderColor: palette.ink,
+        backgroundColor: palette.paper,
+        color: palette.ink,
+        fontFamily: font.display,
+        fontSize: 44,
         textAlign: 'center',
+        paddingVertical: 0,
     },
-    timeLabel: {
-        color: color.secondary,
-        fontSize: 12,
-        marginTop: 8,
-        fontWeight: '600',
+    presets: {
+        flexDirection: 'row',
+        gap: 8,
     },
-    saveButton: {
-        backgroundColor: color.primary,
-        height: 56,
-        borderRadius: 18,
-        justifyContent: 'center',
+    preset: {
+        flex: 1,
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    saveButtonText: {
-        color: color.black,
-        fontSize: 16,
-        fontWeight: '700',
     },
     deleteButton: {
-        height: 56,
-        borderRadius: 18,
-        justifyContent: 'center',
+        marginTop: 14,
+        paddingVertical: 14,
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#FF3B30',
     },
     deleteButtonText: {
-        color: '#FF3B30',
-        fontSize: 16,
-        fontWeight: '600',
+        fontFamily: font.bodyBold,
+        color: palette.tomato,
+        fontSize: 15,
+        textDecorationLine: 'underline',
     },
 });
 

@@ -11,24 +11,25 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,25 +39,41 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rethink.R
 import com.rethink.guard.model.BlockReason
 import kotlinx.coroutines.launch
 
+// Mirrors ui/theme.ts in the React Native app: paper, ink outlines, flat poster colours.
 private object GateColors {
-    val background = Color(0xFF080808)
-    val primary = Color(0xFF13DE67)
-    val accent = Color(0xFF7CFFB2)
-    val muted = Color(0xFF6F7A75)
-    val surface = Color(0xFF1A1F1C)
-    val text = Color.White
-    val danger = Color(0xFFFF453A)
+    val background = Color(0xFFF3EEE3)
+    val card = Color(0xFFFFFCF5)
+    val ink = Color(0xFF1B1A1F)
+    val muted = Color(0xFF57534B)
+    val mint = Color(0xFF8EDFC0)
+    val sun = Color(0xFFFFDD3C)
+    val tomato = Color(0xFFFF6B4A)
+    val lilac = Color(0xFFC3B4FF)
 }
+
+private object GateFonts {
+    val display = FontFamily(Font(R.font.bricolage_extrabold))
+    val body = FontFamily(Font(R.font.figtree_semibold))
+    val bodyBold = FontFamily(Font(R.font.figtree_bold))
+    val mono = FontFamily(Font(R.font.dm_mono_medium))
+}
+
+private val STROKE = 2.dp
 
 private enum class Step { BREATH, CHOICE, DURATION, SHIELD, BLOCKED }
 
@@ -138,14 +155,14 @@ private fun BreathStep(request: GateRequest, onFinished: () -> Unit) {
                         .size(260.dp)
                         .scale(scale.value)
                         .clip(CircleShape)
-                        .background(GateColors.primary.copy(alpha = 0.12f))
-                        .border(2.dp, GateColors.primary.copy(alpha = 0.6f), CircleShape),
+                        .background(GateColors.mint)
+                        .border(STROKE, GateColors.ink, CircleShape),
                 )
                 Text(
                     if (inhaling) "Breathe in" else "Breathe out",
-                    color = GateColors.accent,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
+                    color = GateColors.ink,
+                    fontSize = 24.sp,
+                    fontFamily = GateFonts.display,
                 )
             }
             Spacer(Modifier.height(32.dp))
@@ -156,12 +173,7 @@ private fun BreathStep(request: GateRequest, onFinished: () -> Unit) {
                 Caption("${ordinal(request.attemptsToday)} time opening ${request.app.label} in the last 24 hours")
                 Spacer(Modifier.height(16.dp))
             }
-            LinearProgressIndicator(
-                progress = { progress.value },
-                modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                color = GateColors.primary,
-                trackColor = GateColors.surface,
-            )
+            OutlinedProgress(progress.value)
         },
     )
 }
@@ -235,7 +247,9 @@ private fun BlockedStep(request: GateRequest, onDismiss: () -> Unit, onOpenRethi
     StepLayout(
         header = { AppHeader(request.app, null) },
         body = {
-            Title("$appName is blocked", color = GateColors.danger)
+            Sticker("blocked", GateColors.tomato)
+            Spacer(Modifier.height(16.dp))
+            Title("$appName is blocked")
             Spacer(Modifier.height(12.dp))
             Caption(reason)
         },
@@ -268,57 +282,152 @@ private fun StepLayout(
 
 @Composable
 private fun AppHeader(app: AppInfo, prefix: String?) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(GateColors.card)
+            .border(STROKE, GateColors.ink, RoundedCornerShape(50))
+            .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+    ) {
         app.icon?.let {
-            Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.size(28.dp).clip(CircleShape))
-            Spacer(Modifier.size(10.dp))
+            Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.size(26.dp).clip(CircleShape))
+            Spacer(Modifier.size(8.dp))
         }
-        Text(if (prefix != null) "$prefix ${app.label}" else app.label, color = GateColors.muted, fontSize = 15.sp)
+        Text(
+            if (prefix != null) "$prefix ${app.label}" else app.label,
+            color = GateColors.ink,
+            fontSize = 14.sp,
+            fontFamily = GateFonts.bodyBold,
+        )
     }
 }
 
 @Composable
-private fun Title(text: String, color: Color = GateColors.text) {
+private fun Title(text: String) {
     Text(
         text,
-        color = color,
-        fontSize = 26.sp,
-        lineHeight = 32.sp,
-        fontWeight = FontWeight.SemiBold,
+        color = GateColors.ink,
+        fontSize = 30.sp,
+        lineHeight = 35.sp,
+        fontFamily = GateFonts.display,
         textAlign = TextAlign.Center,
     )
 }
 
 @Composable
 private fun Caption(text: String) {
-    Text(text, color = GateColors.muted, fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center)
+    Text(
+        text,
+        color = GateColors.muted,
+        fontSize = 16.sp,
+        lineHeight = 23.sp,
+        fontFamily = GateFonts.body,
+        textAlign = TextAlign.Center,
+    )
 }
 
+/** Ink button with a hard offset shadow that collapses while pressed. */
 @Composable
 private fun PrimaryButton(text: String, onClick: () -> Unit) {
-    Button(
+    PopBox(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = GateColors.primary, contentColor = Color.Black),
-    ) { Text(text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+        fill = GateColors.ink,
+        modifier = Modifier.fillMaxWidth().height(60.dp),
+    ) { Text(text, color = GateColors.card, fontSize = 17.sp, fontFamily = GateFonts.display) }
 }
 
 @Composable
 private fun SecondaryButton(text: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-        Text(text, color = GateColors.muted, fontSize = 15.sp)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+    ) {
+        Text(
+            text,
+            color = GateColors.ink,
+            fontSize = 15.sp,
+            fontFamily = GateFonts.bodyBold,
+            textDecoration = TextDecoration.Underline,
+        )
     }
 }
 
 @Composable
 private fun DurationChip(text: String, modifier: Modifier, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = GateColors.surface, contentColor = GateColors.text),
-    ) { Text(text, fontSize = 17.sp, fontWeight = FontWeight.Medium) }
+    PopBox(onClick = onClick, fill = GateColors.sun, modifier = modifier.height(68.dp)) {
+        Text(text, color = GateColors.ink, fontSize = 20.sp, fontFamily = GateFonts.display)
+    }
+}
+
+@Composable
+private fun PopBox(
+    onClick: () -> Unit,
+    fill: Color,
+    modifier: Modifier,
+    content: @Composable () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shape = RoundedCornerShape(16.dp)
+    val shadow = 4.dp
+
+    Box(modifier.padding(end = shadow, bottom = shadow)) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .offset(shadow, shadow)
+                .clip(shape)
+                .background(GateColors.ink),
+        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(if (pressed) shadow else 0.dp, if (pressed) shadow else 0.dp)
+                .clip(shape)
+                .background(fill)
+                .border(STROKE, GateColors.ink, shape)
+                .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick),
+        ) { content() }
+    }
+}
+
+@Composable
+private fun OutlinedProgress(progress: Float) {
+    val shape = RoundedCornerShape(50)
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(14.dp)
+            .clip(shape)
+            .background(GateColors.card)
+            .border(STROKE, GateColors.ink, shape),
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .background(GateColors.lilac),
+        )
+    }
+}
+
+@Composable
+private fun Sticker(text: String, fill: Color) {
+    Box(
+        Modifier
+            .rotate(-4f)
+            .clip(RoundedCornerShape(10.dp))
+            .background(fill)
+            .border(STROKE, GateColors.ink, RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    ) {
+        Text(text.uppercase(), color = GateColors.ink, fontSize = 13.sp, fontFamily = GateFonts.display, letterSpacing = 0.8.sp)
+    }
 }
 
 private fun ordinal(n: Int): String {

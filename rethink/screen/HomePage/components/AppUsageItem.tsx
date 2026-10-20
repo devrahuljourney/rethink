@@ -1,140 +1,98 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { color } from '../../../constant/color';
 import { AppUsageStats } from '../../../types/usage';
 import { formatTime } from '../../../utils/timeUtils';
 
 import { useAppLimits } from '../../../context/AppLimitContext';
 import { useUsage } from '../../../context/UsageContext';
-import { getCategoryColor, getCategoryIcon } from '../../../utils/categoryMapper';
+import { getCategoryIcon, getCategoryTone } from '../../../utils/categoryMapper';
+import { IconTile, Meter } from '../../../ui/kit';
+import { Rise, Squish } from '../../../ui/motion';
+import { palette, font } from '../../../ui/theme';
 
 interface AppUsageItemProps {
     item: AppUsageStats;
     onPress?: () => void;
+    /** Position in the list; staggers the entrance of the first screenful. */
+    index?: number;
 }
 
-const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress }) => {
+const AppUsageItem: React.FC<AppUsageItemProps> = ({ item, onPress, index = 0 }) => {
     const { getLimitStatus } = useAppLimits();
     const { getAppCategory } = useUsage();
 
     const limitStatus = getLimitStatus(item.packageName);
     const category = getAppCategory(item.packageName);
-    const categoryColor = getCategoryColor(category);
-    const categoryIcon = getCategoryIcon(category);
+    const launches = item.appLaunchCount || 0;
 
     return (
-        <TouchableOpacity
-            style={styles.itemContainer}
-            onPress={onPress}
-            activeOpacity={0.7}
-            disabled={!onPress}
-        >
-            <View style={[styles.itemIconContainer, { backgroundColor: `${categoryColor}20` }]}>
-                <Ionicons name={categoryIcon} size={24} color={categoryColor} />
-            </View>
-            <View style={styles.itemInfo}>
-                <Text style={styles.packageName} numberOfLines={1}>
-                    {item.appName || item.packageName.split('.').pop()}
-                </Text>
-                <View style={styles.itemSubInfo}>
-                    <Ionicons name="repeat-outline" size={12} color={color.secondary} />
-                    <Text style={styles.launchText}>{item.appLaunchCount || 0} launches</Text>
-                    {limitStatus && (
-                        <View style={styles.limitIndicator}>
-                            <View
-                                style={[
-                                    styles.limitProgress,
-                                    {
-                                        width: `${Math.min(100, limitStatus.percentageUsed)}%`,
-                                        backgroundColor: limitStatus.isWarning ? '#FF9500' : color.primary
-                                    }
-                                ]}
-                            />
+        <Rise delay={Math.min(index, 8) * 45} distance={12}>
+            <Squish onPress={onPress} disabled={!onPress} accessibilityRole="button" scaleTo={0.98} style={styles.row}>
+                <IconTile icon={getCategoryIcon(category)} tone={getCategoryTone(category)} size={42} />
+                <View style={styles.info}>
+                    <Text style={styles.name} numberOfLines={1}>
+                        {item.appName || item.packageName.split('.').pop()}
+                    </Text>
+                    {limitStatus ? (
+                        <View style={styles.limitRow}>
+                            <View style={{ width: 90 }}>
+                                <Meter
+                                    pct={limitStatus.percentageUsed}
+                                    tone={limitStatus.isWarning ? 'tomato' : 'mint'}
+                                    height={8}
+                                />
+                            </View>
+                            <Text style={styles.meta}>{Math.round(limitStatus.percentageUsed)}% of limit</Text>
                         </View>
+                    ) : (
+                        <Text style={styles.meta}>
+                            opened {launches} time{launches === 1 ? '' : 's'}
+                        </Text>
                     )}
                 </View>
-            </View>
-            <View style={styles.itemStats}>
-                <Text style={styles.usageTime}>
-                    {formatTime(item.totalTimeInForeground)}
-                </Text>
-                {onPress && (
-                    <Ionicons name="chevron-forward" size={14} color="#444" style={{ marginTop: 4 }} />
-                )}
-            </View>
-        </TouchableOpacity>
-
+                <Text style={styles.time}>{formatTime(item.totalTimeInForeground)}</Text>
+                {onPress && <Ionicons name="chevron-forward" size={16} color={palette.inkFaint} style={{ marginLeft: 6 }} />}
+            </Squish>
+        </Rise>
     );
 };
 
 const styles = StyleSheet.create({
-    itemContainer: {
+    row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#1E1E1E',
-        padding: 16,
-        borderRadius: 20,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#2A2A2A',
+        paddingVertical: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth * 2,
+        borderBottomColor: palette.line,
     },
-    itemIconContainer: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        backgroundColor: '#2A2A2A',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    itemIconText: {
-        color: color.white,
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    itemInfo: {
+    info: {
         flex: 1,
+        marginHorizontal: 14,
     },
-    itemSubInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 2,
-    },
-    packageName: {
+    name: {
+        fontFamily: font.bodyBold,
         fontSize: 16,
-        color: color.white,
-        fontWeight: '600',
+        color: palette.ink,
         textTransform: 'capitalize',
     },
-    launchText: {
-        fontSize: 12,
-        color: color.secondary,
-        marginLeft: 4,
+    limitRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 5,
+        gap: 8,
     },
-    itemStats: {
-        marginLeft: 16,
-        alignItems: 'flex-end',
+    meta: {
+        fontFamily: font.body,
+        fontSize: 13,
+        color: palette.inkSoft,
+        marginTop: 2,
     },
-    usageTime: {
+    time: {
+        fontFamily: font.displayBold,
         fontSize: 17,
-        color: color.primary,
-        fontWeight: '800',
-    },
-    limitIndicator: {
-        height: 4,
-        width: 60,
-        backgroundColor: '#2A2A2A',
-        borderRadius: 2,
-        marginLeft: 12,
-        overflow: 'hidden',
-    },
-    limitProgress: {
-        height: '100%',
-        borderRadius: 2,
+        color: palette.ink,
     },
 });
-
 
 export default AppUsageItem;

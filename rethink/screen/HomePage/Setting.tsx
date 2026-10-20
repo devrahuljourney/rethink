@@ -3,11 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
-  SafeAreaView,
-  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -15,7 +12,9 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { color } from '../../constant/color';
+import { Screen, Txt, Card, Field, PopButton, Sticker, SectionLabel } from '../../ui/kit';
+import { palette, font, radius, stroke, TAB_BAR_SPACE } from '../../ui/theme';
+import { Rise } from '../../ui/motion';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfileAPI, logoutAPI } from '../../services/API/authAPI';
 
@@ -56,7 +55,7 @@ export default function Setting() {
       }
     } catch (error) {
       console.error('ImagePicker Error: ', error);
-      Alert.alert("Error", "Could not pick an image.");
+      Alert.alert("Couldn't open photos", "Try again, or check that Rethink can access your photos.");
     }
   };
 
@@ -65,7 +64,7 @@ export default function Setting() {
     try {
       const res = await updateProfileAPI(name, mobileStatus, avatarUrl || undefined);
       if (res && res.success) {
-        Alert.alert("Success", "Profile updated successfully!");
+        Alert.alert("Saved", "Your profile is up to date.");
         await checkAuth();
       }
     } catch (error: any) {
@@ -78,12 +77,12 @@ export default function Setting() {
 
   const handleLogout = async () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to log out?",
+      "Log out?",
+      "Your limits and focus schedules stay on this phone.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Logout",
+          text: "Log out",
           style: "destructive",
           onPress: async () => {
             setLoading(true);
@@ -93,7 +92,7 @@ export default function Setting() {
               await checkAuth();
             } catch (error) {
               console.error(error);
-              Alert.alert("Error", "Failed to logout.");
+              Alert.alert("Still logged in", "Something went wrong logging out. Try again.");
             } finally {
               setLoading(false);
             }
@@ -103,225 +102,171 @@ export default function Setting() {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
+  const initial = (name || user?.email || '?').trim().charAt(0).toUpperCase();
 
+  return (
+    <Screen>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Rise>
+            <Txt v="display">You</Txt>
+          </Rise>
 
-          <View style={styles.avatarSection}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={handleSelectImage}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={50} color={color.secondary} />
+          <Rise delay={80} style={styles.profileWrap}>
+            <Card tone="lilac" style={styles.profileCard}>
+              <Pressable
+                style={styles.avatarContainer}
+                onPress={handleSelectImage}
+                accessibilityRole="button"
+                accessibilityLabel="Change photo"
+              >
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <Text style={styles.initial}>{initial}</Text>
+                  </View>
+                )}
+                <View style={styles.cameraBadge}>
+                  <Ionicons name="camera" size={15} color={palette.ink} />
                 </View>
-              )}
-              <View style={styles.cameraIconContainer}>
-                <Ionicons name="camera" size={16} color={color.black} />
+              </Pressable>
+              <View style={styles.profileText}>
+                <Txt v="h1" numberOfLines={1}>{name || 'No name yet'}</Txt>
+                <Text style={styles.email} numberOfLines={1}>{user?.email || 'not logged in'}</Text>
               </View>
-            </TouchableOpacity>
-            <Text style={styles.avatarLabel}>Tap to change avatar</Text>
-          </View>
+            </Card>
+            <Sticker text="tap photo to change" tone="sun" tilt={4} delay={500} style={styles.profileSticker} />
+          </Rise>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color={color.secondary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                placeholderTextColor={color.secondary}
-                value={name}
-                onChangeText={setName}
-              />
-            </View>
+          <SectionLabel>Name</SectionLabel>
+          <Field
+            icon="person-outline"
+            placeholder="Your name"
+            value={name}
+            onChangeText={setName}
+            autoComplete="name"
+          />
 
-            <Text style={styles.inputLabel}>Mobile Number</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="call-outline" size={20} color={color.secondary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Mobile Number"
-                placeholderTextColor={color.secondary}
-                value={mobileStatus}
-                onChangeText={setMobileStatus}
-                keyboardType="phone-pad"
-              />
-            </View>
+          <SectionLabel style={styles.gap}>Phone</SectionLabel>
+          <Field
+            icon="call-outline"
+            placeholder="Phone number"
+            value={mobileStatus}
+            onChangeText={setMobileStatus}
+            keyboardType="phone-pad"
+          />
 
-            <Text style={styles.inputLabel}>Email Address</Text>
-            <View style={[styles.inputContainer, styles.disabledInputContainer]}>
-              <Ionicons name="mail-outline" size={20} color={color.secondary} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.disabledInput]}
-                value={user?.email || 'user@example.com'}
-                editable={false}
-              />
-            </View>
+          <SectionLabel style={styles.gap} right={<Txt v="label">can't change</Txt>}>Email</SectionLabel>
+          <Field icon="mail-outline" value={user?.email || ''} editable={false} />
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color={color.black} />
-              ) : (
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              )}
-            </TouchableOpacity>
+          <PopButton title="Save changes" tone="cobalt" onPress={handleSave} loading={loading} style={{ marginTop: 28 }} />
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loading}>
-              <Ionicons name="log-out-outline" size={20} color="#FF5252" style={{ marginRight: 8 }} />
-              <Text style={styles.logoutButtonText}>Log Out</Text>
-            </TouchableOpacity>
-
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.logoutButton, pressed && { backgroundColor: palette.peach }]}
+            onPress={handleLogout}
+            disabled={loading}
+            accessibilityRole="button"
+          >
+            <Ionicons name="log-out-outline" size={20} color={palette.ink} />
+            <Text style={styles.logoutButtonText}>Log out</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
+const AVATAR = 76;
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: color.black || '#000',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 28,
-    color: color.white || '#FFF',
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingTop: 12,
+    paddingBottom: TAB_BAR_SPACE,
   },
-  avatarSection: {
-    alignItems: 'center',
-    marginVertical: 24,
+  profileWrap: {
+    marginTop: 18,
+    marginBottom: 26,
   },
-  avatarContainer: {
-    position: 'relative',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#1E1E1E',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  cameraIconContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: color.primary || '#177AD5',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: color.black,
-  },
-  avatarLabel: {
-    marginTop: 12,
-    color: color.secondary,
-    fontSize: 14,
-  },
-  formContainer: {
-    marginTop: 10,
-  },
-  inputLabel: {
-    color: color.white,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputContainer: {
+  profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 60,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-    marginBottom: 20,
   },
-  disabledInputContainer: {
-    backgroundColor: '#121212',
-    borderColor: '#1A1A1A',
+  profileSticker: {
+    position: 'absolute',
+    right: 12,
+    bottom: -12,
   },
-  inputIcon: {
-    marginRight: 12,
+  avatarContainer: {
+    width: AVATAR,
+    height: AVATAR,
   },
-  input: {
-    flex: 1,
-    color: color.white,
-    fontSize: 16,
+  avatar: {
+    width: AVATAR,
+    height: AVATAR,
+    borderRadius: AVATAR / 2,
+    borderWidth: stroke,
+    borderColor: palette.ink,
   },
-  disabledInput: {
-    color: color.secondary,
-  },
-  saveButton: {
-    backgroundColor: color.primary || '#177AD5',
-    height: 60,
-    borderRadius: 16,
-    justifyContent: 'center',
+  avatarPlaceholder: {
+    backgroundColor: palette.card,
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 24,
-    shadowColor: color.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'center',
   },
-  saveButtonText: {
-    color: color.black,
-    fontSize: 18,
-    fontWeight: '800',
+  initial: {
+    fontFamily: font.display,
+    fontSize: 34,
+    color: palette.ink,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: stroke,
+    borderColor: palette.ink,
+    backgroundColor: palette.sun,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  email: {
+    fontFamily: font.mono,
+    fontSize: 12,
+    color: palette.ink,
+    marginTop: 2,
+  },
+  gap: {
+    marginTop: 18,
   },
   logoutButton: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 82, 82, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 82, 82, 0.3)',
-    height: 60,
-    borderRadius: 16,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    gap: 8,
+    height: 56,
+    marginTop: 14,
+    borderRadius: radius.md,
+    borderWidth: stroke,
+    borderColor: palette.ink,
+    borderStyle: 'dashed',
   },
   logoutButtonText: {
-    color: '#FF5252',
-    fontSize: 18,
-    fontWeight: '700',
+    fontFamily: font.bodyBold,
+    color: palette.ink,
+    fontSize: 16,
   },
 });

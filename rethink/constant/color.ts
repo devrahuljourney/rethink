@@ -1,8 +1,11 @@
+import { palette } from '../ui/theme'
+
+// Legacy names, kept for older imports. New code should use ui/theme directly.
 export const color = {
-  primary: '#13DE67',     // Active tab
-  accent: '#7CFFB2',      // Soft highlight
-  secondary: '#6f7a75',   // Muted text
-  glow: '#3f4a45',        // Inactive tab bg
-  white: '#ffffff',
-  black: '#080808',
+  primary: palette.cobalt,
+  accent: palette.mint,
+  secondary: palette.inkSoft,
+  glow: palette.line,
+  white: palette.card,
+  black: palette.ink,
 }
