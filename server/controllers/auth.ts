@@ -3,6 +3,8 @@ import { USER_SIGNUP_DATA } from "../types/auth";
 import supabase from "../config/supabase";
 import { CookieOptions } from "express";
 import { User } from "@supabase/supabase-js";
+import { uploadAvatarDataUrl } from "../utils/avatar";
+import getSupabaseAdmin from "../config/supabaseAdmin";
 
 interface AuthenticatedRequest extends Request {
   user?: User;
@@ -81,6 +83,8 @@ export const userLogin = async (req: Request, res: Response): Promise<Response> 
       success: true,
       message: "User logged in successfully",
       user: data.user,
+      // Mobile clients can't rely on the cookie jar, so they send this as a Bearer token
+      token: data.session.access_token,
     });
 
   } catch (err) {
@@ -139,10 +143,14 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
     const metadataUpdate: any = {};
     if (name) metadataUpdate.name = name;
     if (mobile_number) metadataUpdate.mobile_number = mobile_number;
-    if (avatar_url) metadataUpdate.avatar_url = avatar_url;
+    if (avatar_url) {
+      metadataUpdate.avatar_url = avatar_url.startsWith("data:")
+        ? await uploadAvatarDataUrl(user.id, avatar_url)
+        : avatar_url;
+    }
 
     // Use admin client to update user data reliably
-    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+    const { data, error } = await getSupabaseAdmin().auth.admin.updateUserById(user.id, {
       user_metadata: metadataUpdate
     });
 

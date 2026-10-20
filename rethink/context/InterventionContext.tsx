@@ -1,22 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PermissionManager from '../utils/PermissionManager';
-import { useAppLimits } from './AppLimitContext';
-import { useFocusMode } from './FocusModeContext';
+import type { GateSettings } from '../services/guard/types';
 
-const { AppEventModule } = NativeModules;
-
-const eventEmitter = AppEventModule ? new NativeEventEmitter(AppEventModule) : null;
-
+/**
+ * User settings for the mindful gate. Enforcement happens natively (see android/.../guard);
+ * this context only owns what the user chose. useGuardSync pushes it to native.
+ */
 interface InterventionContextType {
+    isLoaded: boolean;
     isInterventionEnabled: boolean;
     setIsInterventionEnabled: (enabled: boolean) => void;
     monitoredApps: string[];
     setMonitoredApps: (apps: string[]) => void;
-    isIntervening: boolean;
-    currentTriggerApp: string | null;
-    resetIntervention: () => void;
+    isMonitored: (packageName: string) => boolean;
+    setAppMonitored: (packageName: string, monitored: boolean) => void;
+    gateSettings: GateSettings;
+    updateGateSettings: (updates: Partial<GateSettings>) => void;
 }
 
 const InterventionContext = createContext<InterventionContextType | undefined>(undefined);
@@ -24,136 +23,100 @@ const InterventionContext = createContext<InterventionContextType | undefined>(u
 const STORAGE_KEYS = {
     IS_ENABLED: '@intervention_enabled',
     MONITORED_APPS: '@monitored_apps',
+    GATE_SETTINGS: '@gate_settings',
 };
 
 export const MONITORED_APPS_DEFAULT = [
     'com.google.android.youtube',
-    'com.google.android.apps.photos',
     'com.instagram.android',
     'com.facebook.katana',
     'com.zhiliaoapp.musically', // TikTok
+    'com.twitter.android',
+    'com.snapchat.android',
+    'com.reddit.frontpage',
 ];
 
+export const GATE_SETTINGS_DEFAULT: GateSettings = {
+    breathSeconds: 8,
+    graceSeconds: 60,
+    askSessionLength: true,
+};
+
+const persist = (key: string, value: unknown) =>
+    AsyncStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).catch(error =>
+        console.error(`InterventionContext: failed to save ${key}`, error),
+    );
+
 export const InterventionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [isInterventionEnabled, setIsInterventionEnabledState] = useState(false);
-    const [monitoredApps, setMonitoredAppsState] = useState<string[]>(MONITORED_APPS_DEFAULT);
-    const [isIntervening, setIsIntervening] = useState(false);
-    const [currentTriggerApp, setCurrentTriggerApp] = useState<string | null>(null);
-
-    const { isAppBlocked } = useAppLimits();
-    const { isAppBlockedByFocus } = useFocusMode();
-
-    // Load persisted state
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [isInterventionEnabled, setEnabledState] = useState(false);
+    const [monitoredApps, setMonitoredState] = useState<string[]>(MONITORED_APPS_DEFAULT);
+    const [gateSettings, setGateSettingsState] = useState<GateSettings>(GATE_SETTINGS_DEFAULT);
 
     useEffect(() => {
-        const loadState = async () => {
+        (async () => {
             try {
-                const enabled = await AsyncStorage.getItem(STORAGE_KEYS.IS_ENABLED);
-                if (enabled !== null) {
-                    setIsInterventionEnabledState(enabled === 'true');
-                }
-
-                const apps = await AsyncStorage.getItem(STORAGE_KEYS.MONITORED_APPS);
-                if (apps !== null) {
-                    setMonitoredAppsState(JSON.parse(apps));
-                }
-
-                // Check if we were launched due to an intervention
-                if (AppEventModule && AppEventModule.getInitialTriggerApp) {
-                    const initialApp = await AppEventModule.getInitialTriggerApp();
-                    if (initialApp) {
-                        console.log('Context: Detected initial intervention for:', initialApp);
-                        setCurrentTriggerApp(initialApp);
-                        setIsIntervening(true);
-                    }
-                }
+                const [[, enabled], [, apps], [, gate]] = await AsyncStorage.multiGet([
+                    STORAGE_KEYS.IS_ENABLED,
+                    STORAGE_KEYS.MONITORED_APPS,
+                    STORAGE_KEYS.GATE_SETTINGS,
+                ]);
+                if (enabled !== null) setEnabledState(enabled === 'true');
+                if (apps !== null) setMonitoredState(JSON.parse(apps));
+                if (gate !== null) setGateSettingsState({ ...GATE_SETTINGS_DEFAULT, ...JSON.parse(gate) });
             } catch (error) {
                 console.error('InterventionContext: Error loading state:', error);
+            } finally {
+                setIsLoaded(true);
             }
-        };
-        loadState();
+        })();
     }, []);
 
-    const setIsInterventionEnabled = async (enabled: boolean) => {
-        setIsInterventionEnabledState(enabled);
-        try {
-            await AsyncStorage.setItem(STORAGE_KEYS.IS_ENABLED, String(enabled));
-        } catch (error) {
-            console.error('InterventionContext: Error saving enabled state:', error);
-        }
-    };
-
-    const setMonitoredApps = async (apps: string[]) => {
-        setMonitoredAppsState(apps);
-        try {
-            await AsyncStorage.setItem(STORAGE_KEYS.MONITORED_APPS, JSON.stringify(apps));
-        } catch (error) {
-            console.error('InterventionContext: Error saving monitored apps:', error);
-        }
-    };
-
-    const resetIntervention = useCallback(() => {
-        setIsIntervening(false);
-        setCurrentTriggerApp(null);
+    const setIsInterventionEnabled = useCallback((enabled: boolean) => {
+        setEnabledState(enabled);
+        persist(STORAGE_KEYS.IS_ENABLED, String(enabled));
     }, []);
 
-    const handleAppForegroundChange = useCallback((packageName: string) => {
-        // If we are currently in Rethink, don't trigger anything but also don't reset
-        if (packageName === 'com.rethink') {
-            console.log('Context: App is in Rethink, skipping triggering');
-            return;
-        }
+    const setMonitoredApps = useCallback((apps: string[]) => {
+        setMonitoredState(apps);
+        persist(STORAGE_KEYS.MONITORED_APPS, apps);
+    }, []);
 
-        const isHardBlocked = isAppBlocked(packageName) || isAppBlockedByFocus(packageName);
-        const shouldIntervene = isInterventionEnabled && monitoredApps.includes(packageName);
+    const setAppMonitored = useCallback((packageName: string, monitored: boolean) => {
+        setMonitoredState(current => {
+            const next = monitored
+                ? Array.from(new Set([...current, packageName]))
+                : current.filter(pkg => pkg !== packageName);
+            persist(STORAGE_KEYS.MONITORED_APPS, next);
+            return next;
+        });
+    }, []);
 
-        // Check if the foreground app should be blocked or intervened
-        if (isHardBlocked || shouldIntervene) {
-            // Avoid double triggering for the same app if we are already intervening
-            if (isIntervening && currentTriggerApp === packageName) return;
+    const isMonitored = useCallback(
+        (packageName: string) => monitoredApps.includes(packageName),
+        [monitoredApps],
+    );
 
-            console.log(`Intervention/Block triggered for: ${packageName} (Hard: ${isHardBlocked})`);
-            setCurrentTriggerApp(packageName);
-            setIsIntervening(true);
-
-            // Ensure native side also knows to block
-            if (AppEventModule) {
-                AppEventModule.blockApp(packageName);
-            }
-        } else {
-
-            // If the user switched to a DIFFERENT, un-monitored app, reset the flag
-            // This ensures that if they open YouTube again later, it triggers.
-            if (isIntervening) {
-                console.log(`Context: User moved to non-monitored app (${packageName}), resetting intervention flag.`);
-                resetIntervention();
-            }
-        }
-    }, [isInterventionEnabled, monitoredApps, isIntervening, currentTriggerApp, resetIntervention, isAppBlocked, isAppBlockedByFocus]);
-
-    useEffect(() => {
-        if (Platform.OS !== 'android' || !eventEmitter) return;
-
-        const subscription = eventEmitter.addListener(
-            'APP_FOREGROUND_CHANGED',
-            handleAppForegroundChange
-        );
-
-        return () => {
-            subscription.remove();
-        };
-    }, [handleAppForegroundChange]);
+    const updateGateSettings = useCallback((updates: Partial<GateSettings>) => {
+        setGateSettingsState(current => {
+            const next = { ...current, ...updates };
+            persist(STORAGE_KEYS.GATE_SETTINGS, next);
+            return next;
+        });
+    }, []);
 
     return (
         <InterventionContext.Provider
             value={{
+                isLoaded,
                 isInterventionEnabled,
                 setIsInterventionEnabled,
                 monitoredApps,
                 setMonitoredApps,
-                isIntervening,
-                currentTriggerApp,
-                resetIntervention,
+                isMonitored,
+                setAppMonitored,
+                gateSettings,
+                updateGateSettings,
             }}
         >
             {children}

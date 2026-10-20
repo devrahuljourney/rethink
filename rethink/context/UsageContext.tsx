@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
-import { queryAndAggregateUsageStats, checkForPermission } from '@brighthustle/react-native-usage-stats-manager';
+import { checkForPermission } from '@brighthustle/react-native-usage-stats-manager';
+import { queryUsage } from '../services/usage/usageNative';
 import { AppUsageStats, FilterRange } from '../types/usage';
 import { getStartOfDay, getPreviousDayStart, getPreviousDayEnd } from '../utils/timeUtils';
 import { CategoryStats, AppCategory } from '../types/appLimits';
@@ -22,32 +23,6 @@ interface UsageContextType {
 
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
-
-// Comprehensive filter for system/common apps
-const BLACKLISTED_PACKAGES = [
-    'com.android.launcher',
-    'com.google.android.googlequicksearchbox',
-    'com.android.systemui',
-    'com.android.vending',
-    'com.google.android.gms',
-    'android',
-    'com.miui.home',
-    'com.miui.securitycenter',
-    'com.android.incallui',
-    'com.google.android.deskclock',
-    'com.android.phone',
-    'com.sec.android.app.launcher',
-    'com.google.android.apps.nexuslauncher',
-    'com.huawei.android.launcher',
-];
-
-const BLACKLISTED_PREFIXES = [
-    'com.android.providers.',
-    'com.google.android.apps.internal.',
-    'com.xiaomi.',
-    'com.miui.',
-    'com.samsung.',
-];
 
 const FRIENDLY_NAME_MAP: Record<string, string> = {
     'com.google.android.youtube': 'YouTube',
@@ -110,15 +85,11 @@ export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 startMs = todayStart - 29 * 24 * 60 * 60 * 1000;
             }
 
-            const rawResult = await queryAndAggregateUsageStats(startMs, now);
-            const usageArray: AppUsageStats[] = Object.values(rawResult as any);
+            // Native already excludes home screens, system UI and non-launchable packages.
+            const usageArray = await queryUsage(startMs, now);
 
             const filtered = usageArray
-                .filter(app => (
-                    app.totalTimeInForeground > 0 &&
-                    !app.isSystem &&
-                    !BLACKLISTED_PACKAGES.includes(app.packageName)
-                ))
+                .filter(app => app.totalTimeInForeground > 0)
                 .map(app => ({
                     ...app,
                     appName: app.appName || app.packageName.split('.').pop()?.replace(/^[a-z]/, (L) => L.toUpperCase()) || 'Unknown'
@@ -137,18 +108,12 @@ export const UsageProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // 3. Fetch Yesterday's Stats for Comparison (Always Daily comparison for better addictive hook)
             const yesterdayStart = getPreviousDayStart();
             const yesterdayEnd = getPreviousDayEnd();
-            const yesterdayResult = await queryAndAggregateUsageStats(yesterdayStart, yesterdayEnd);
-            const yesterdayArray: AppUsageStats[] = Object.values(yesterdayResult as any);
-            const totalYesterday = yesterdayArray
-                .filter(app => !BLACKLISTED_PACKAGES.includes(app.packageName))
-                .reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
+            const yesterdayArray = await queryUsage(yesterdayStart, yesterdayEnd);
+            const totalYesterday = yesterdayArray.reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
 
             // Fetch absolute today total for comparison
-            const absoluteTodayResult = activeRange === 'DAILY' ? rawResult : await queryAndAggregateUsageStats(todayStart, now);
-            const absoluteTodayArray: AppUsageStats[] = Object.values(absoluteTodayResult as any);
-            const absoluteTodayTotal = absoluteTodayArray
-                .filter(app => !BLACKLISTED_PACKAGES.includes(app.packageName))
-                .reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
+            const absoluteTodayArray = activeRange === 'DAILY' ? usageArray : await queryUsage(todayStart, now);
+            const absoluteTodayTotal = absoluteTodayArray.reduce((acc, curr) => acc + curr.totalTimeInForeground, 0);
 
             if (totalYesterday > 0) {
                 const percentChange = ((absoluteTodayTotal - totalYesterday) / totalYesterday) * 100;

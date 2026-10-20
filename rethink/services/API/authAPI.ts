@@ -1,14 +1,20 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authEndpoints } from "../api";
 import { callApi } from "../callAPI";
+import { TOKEN_KEY } from "../apiConnector";
 
-export const loginAPI = (email: string, password: string) => {
-    return callApi({
+export const loginAPI = async (email: string, password: string) => {
+    const res = await callApi({
         method: "POST",
         url: authEndpoints.login,
         body: { email, password },
         showErrorToast: true,
         showSuccessToast: true,
-    })
+    }) as { token?: string };
+    if (res.token) {
+        await AsyncStorage.setItem(TOKEN_KEY, res.token);
+    }
+    return res;
 }
 
 export const signUpAPI = (email: string, password: string, name: string, mobile_number: string, confirm_password: string) => {
@@ -21,13 +27,17 @@ export const signUpAPI = (email: string, password: string, name: string, mobile_
     })
 }
 
-export const logoutAPI = () => {
-    return callApi({
-        method: "POST",
-        url: authEndpoints.logout,
-        showErrorToast: true,
-        showSuccessToast: true,
-    })
+export const logoutAPI = async () => {
+    try {
+        return await callApi({
+            method: "POST",
+            url: authEndpoints.logout,
+            showErrorToast: true,
+            showSuccessToast: true,
+        })
+    } finally {
+        await AsyncStorage.removeItem(TOKEN_KEY);
+    }
 }
 
 export const getProfileAPI = () => {

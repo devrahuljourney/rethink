@@ -17,6 +17,7 @@ import LaunchGraph from './components/LaunchGraph'
 import { formatTime } from '../../utils/timeUtils'
 import { useNavigation } from '@react-navigation/native'
 import { useUsage } from '../../context/UsageContext'
+import GuardStatusBanner from '../Intervention/GuardStatusBanner'
 
 export default function Home() {
   const navigation = useNavigation<any>()
@@ -51,6 +52,7 @@ export default function Home() {
 
     return (
       <View style={{ paddingBottom: 40 }}>
+        <GuardStatusBanner />
         <FilterTabs
           activeRange={activeRange}
           onRangeChange={(range) => setActiveRange(range)}
@@ -58,7 +60,7 @@ export default function Home() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.focusCard}
-            onPress={() => navigation.navigate('AppStack', { screen: 'FocusMode' })}
+            onPress={() => navigation.navigate('FocusStack')}
           >
             <View style={styles.focusIconCircle}>
               <Ionicons name="shield-checkmark" size={24} color={color.primary} />
@@ -111,7 +113,7 @@ export default function Home() {
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={styles.seeMoreButton}
-            onPress={() => navigation.navigate('AppStack')}
+            onPress={() => navigation.navigate('AppStack', { screen: 'App' })}
           >
             <Text style={styles.seeMoreText}>View Detailed App Usage</Text>
             <Ionicons name="arrow-forward" size={18} color={color.primary} />

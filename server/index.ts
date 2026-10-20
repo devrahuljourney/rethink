@@ -12,7 +12,8 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
-app.use(express.json());
+// Room for base64 avatar uploads (the default is 100kb)
+app.use(express.json({ limit: '2mb' }));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/usage', usageRouter);
 app.use('/api/v1/coach', coachRouter);

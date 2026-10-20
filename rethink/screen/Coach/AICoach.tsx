@@ -49,9 +49,9 @@ export default function AICoach() {
 
     const handleAction = (actionType: 'FOCUS_MODE' | 'APP_LIMITS') => {
         if (actionType === 'FOCUS_MODE') {
-            navigation.navigate('AppStack', { screen: 'FocusMode' });
+            navigation.navigate('FocusStack');
         } else if (actionType === 'APP_LIMITS') {
-            navigation.navigate('AppStack');
+            navigation.navigate('AppStack', { screen: 'App' });
         }
     };
 

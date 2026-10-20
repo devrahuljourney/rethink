@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { getProfileAPI } from '../services/API/authAPI';
 
 interface AuthContextType {
@@ -28,7 +29,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(null);
             }
         } catch (error) {
-            console.error('Auth check failed:', error);
+            // 401 just means no session yet; only log real failures
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                console.log('Auth check: not logged in');
+            } else {
+                console.error('Auth check failed:', error);
+            }
             setIsAuthenticated(false);
             setUser(null);
         } finally {

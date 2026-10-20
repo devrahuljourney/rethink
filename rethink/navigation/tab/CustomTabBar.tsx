@@ -4,6 +4,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { color } from '../../constant/color'
 
+const TAB_ICONS: Record<string, string> = {
+  HomeStack: 'home',
+  CoachStack: 'bulb',
+  AppStack: 'apps',
+  FocusStack: 'shield-checkmark',
+  SettingStack: 'settings',
+}
+
 
 export default function CustomTabBar({
   state,
@@ -17,14 +25,7 @@ export default function CustomTabBar({
           const { options } = descriptors[route.key]
           const focused = state.index === index
 
-          const icon =
-            route.name === 'HomeStack'
-              ? 'home'
-              : route.name === 'CoachStack'
-                ? 'bulb'
-                : route.name === 'AppStack'
-                  ? 'apps'
-                  : 'settings'
+          const icon = TAB_ICONS[route.name] ?? 'ellipse'
 
           return (
             <TouchableOpacity

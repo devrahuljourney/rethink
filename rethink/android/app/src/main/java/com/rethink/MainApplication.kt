@@ -6,6 +6,8 @@ import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
+import com.rethink.guard.bridge.GuardPackage
+import com.rethink.usage.UsagePackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -15,7 +17,8 @@ class MainApplication : Application(), ReactApplication {
       packageList =
         PackageList(this).packages.apply {
           // Packages that cannot be autolinked yet can be added manually here, for example:
-          add(AppEventPackage())
+          add(GuardPackage())
+          add(UsagePackage())
         },
     )
   }

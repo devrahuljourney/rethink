@@ -7,11 +7,10 @@ interface AuthenticatedRequest extends Request {
 }
 
 export async function userAuthMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-    if (!req.cookies) {
-        return res.status(401).json({ message: 'No cookies found in request' });
-    }
-
-    const { access_token: token } = req.cookies;
+    // Cookie for web clients, Authorization header for the mobile app
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    const token = req.cookies?.access_token || bearerToken;
 
     if (!token) {
         return res.status(401).json({ message: 'You are not authenticated! Please log in.' });

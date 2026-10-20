@@ -5,6 +5,7 @@ import HomeStack from '../stack/HomeStack'
 import SettingStack from '../stack/SettingStack'
 import AppStack from '../stack/AppStack'
 import CoachStack from '../stack/CoachStack'
+import FocusStack from '../stack/FocusStack'
 import { BottomTabParamList } from '../navigationTypes'
 import CustomTabBar from './CustomTabBar'
 import { useAuth } from '../../context/AuthContext'
@@ -20,6 +21,8 @@ export default function BottomTabNav() {
       tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        // Each tab reopens on its root screen, so tabs never show another tab's leftover screen.
+        popToTopOnBlur: true,
       }}
     >
       <Tab.Screen name="HomeStack" component={HomeStack} />
@@ -30,6 +33,10 @@ export default function BottomTabNav() {
       <Tab.Screen
         name="AppStack"
         component={isAuthenticated ? AppStack : AuthNavigator}
+      />
+      <Tab.Screen
+        name="FocusStack"
+        component={isAuthenticated ? FocusStack : AuthNavigator}
       />
       <Tab.Screen
         name="SettingStack"

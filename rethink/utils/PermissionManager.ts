@@ -1,15 +1,15 @@
-import { NativeModules, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { guardNative } from '../services/guard/guardNative';
 
-const { AppEventModule } = NativeModules;
+const DISCLOSURE_CONSENT_KEY = '@accessibility_disclosure_accepted';
 
 class PermissionManager {
-    /**
-     * Checks if the Accessibility Service is connected.
-     */
+    /** True when the guard accessibility service is enabled in system settings. */
     static async checkAccessibilityPermission(): Promise<boolean> {
         if (Platform.OS !== 'android') return true;
         try {
-            return await AppEventModule.isServiceConnected();
+            return await guardNative.isServiceEnabled();
         } catch (error) {
             console.error('PermissionManager: Error checking accessibility permission:', error);
             return false;
@@ -17,49 +17,33 @@ class PermissionManager {
     }
 
     /**
-     * Opens the Accessibility Settings screen.
+     * Play policy: the prominent disclosure must be accepted before we send the user to
+     * accessibility settings. Callers show <AccessibilityDisclosure /> first.
      */
-    static requestAccessibilityPermission(): void {
+    static async hasAcceptedDisclosure(): Promise<boolean> {
+        return (await AsyncStorage.getItem(DISCLOSURE_CONSENT_KEY)) === 'true';
+    }
+
+    static async acceptDisclosure(): Promise<void> {
+        await AsyncStorage.setItem(DISCLOSURE_CONSENT_KEY, 'true');
+    }
+
+    /** Opens accessibility settings. Must only be called after the disclosure was accepted. */
+    static async requestAccessibilityPermission(): Promise<void> {
         if (Platform.OS !== 'android') return;
-        try {
-            AppEventModule.openAccessibilitySettings();
-        } catch (error) {
-            console.error('PermissionManager: Error opening accessibility settings:', error);
+        if (!(await this.hasAcceptedDisclosure())) {
+            console.warn('PermissionManager: disclosure not accepted, not opening accessibility settings');
+            return;
         }
+        guardNative.openAccessibilitySettings();
     }
 
-    /**
-     * Checks if the app has permission to draw over other apps.
-     */
-    static async checkOverlayPermission(): Promise<boolean> {
-        if (Platform.OS !== 'android') return true;
-        try {
-            return await AppEventModule.hasOverlayPermission();
-        } catch (error) {
-            console.error('PermissionManager: Error checking overlay permission:', error);
-            return false;
-        }
+    static async checkBatteryOptimizationExempt(): Promise<boolean> {
+        return guardNative.isIgnoringBatteryOptimizations();
     }
 
-    /**
-     * Opens the Overlay Settings screen.
-     */
-    static requestOverlayPermission(): void {
-        if (Platform.OS !== 'android') return;
-        try {
-            AppEventModule.openOverlaySettings();
-        } catch (error) {
-            console.error('PermissionManager: Error opening overlay settings:', error);
-        }
-    }
-
-    /**
-     * Checks all required permissions for Smart Intervention.
-     */
-    static async checkAllPermissions(): Promise<boolean> {
-        const hasAccessibility = await this.checkAccessibilityPermission();
-        const hasOverlay = await this.checkOverlayPermission();
-        return hasAccessibility && hasOverlay;
+    static requestBatteryOptimizationExemption(): void {
+        guardNative.openBatteryOptimizationSettings();
     }
 }
 

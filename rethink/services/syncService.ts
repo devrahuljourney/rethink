@@ -1,7 +1,8 @@
-import { queryAndAggregateUsageStats } from '@brighthustle/react-native-usage-stats-manager';
+import { queryUsage } from './usage/usageNative';
 import { getPreviousDayStart, getPreviousDayEnd } from '../utils/timeUtils';
 import { getAppCategory } from '../utils/categoryMapper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { syncYesterdayUsageAPI } from './usageAPI';
 
 const SYNC_KEY = 'last_usage_sync_date';
@@ -19,8 +20,7 @@ export const syncYesterdayUsage = async () => {
         const startMs = getPreviousDayStart();
         const endMs = getPreviousDayEnd();
 
-        const rawResult = await queryAndAggregateUsageStats(startMs, endMs);
-        const usageArray = Object.values(rawResult as any);
+        const usageArray = await queryUsage(startMs, endMs);
 
         // Filter and structure data for LangChain analysis
         const dailySummary = {
@@ -68,6 +68,11 @@ export const syncYesterdayUsage = async () => {
             console.error('SyncService: Sync failed:', response.message);
         }
     } catch (error) {
+        // Not logged in yet; sync will run again after login
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+            console.log('SyncService: Skipped, not logged in');
+            return;
+        }
         console.error('SyncService: Error during sync:', error);
     }
 };

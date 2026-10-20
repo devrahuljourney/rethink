@@ -1,74 +1,83 @@
-import React from 'react';
-import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Switch } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { color } from '../../../constant/color';
 import { useIntervention } from '../../../context/InterventionContext';
 import PermissionManager from '../../../utils/PermissionManager';
+import AccessibilityDisclosure from '../../Intervention/AccessibilityDisclosure';
 
 interface InterventionToggleProps {
-    // These might be kept if the parent still wants to track it, 
-    // but we'll primary use the context now.
-    isEnabled?: boolean;
-    onToggle?: (value: boolean) => void;
+    /** When set, toggles the mindful pause for this one app instead of the whole feature. */
+    packageName?: string;
 }
 
-const InterventionToggle: React.FC<InterventionToggleProps> = () => {
-    const { isInterventionEnabled, setIsInterventionEnabled } = useIntervention();
+const InterventionToggle: React.FC<InterventionToggleProps> = ({ packageName }) => {
+    const { isInterventionEnabled, setIsInterventionEnabled, isMonitored, setAppMonitored } = useIntervention();
+    const [showDisclosure, setShowDisclosure] = useState(false);
+
+    const isOn = packageName ? isInterventionEnabled && isMonitored(packageName) : isInterventionEnabled;
+
+    const turnOn = () => {
+        if (packageName) setAppMonitored(packageName, true);
+        setIsInterventionEnabled(true);
+    };
 
     const handleToggle = async (value: boolean) => {
-        if (value) {
-            // Check permissions before enabling
-            const hasAccessibility = await PermissionManager.checkAccessibilityPermission();
-            if (!hasAccessibility) {
-                Alert.alert(
-                    'Accessibility Permission Required',
-                    'Rethink needs accessibility permission to detect when you open certain apps.',
-                    [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Settings', onPress: () => PermissionManager.requestAccessibilityPermission() }
-                    ]
-                );
-                return;
-            }
-
-            const hasOverlay = await PermissionManager.checkOverlayPermission();
-            if (!hasOverlay) {
-                Alert.alert(
-                    'Overlay Permission Required',
-                    'Rethink needs permission to display the intervention screen over other apps.',
-                    [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Settings', onPress: () => PermissionManager.requestOverlayPermission() }
-                    ]
-                );
-                return;
-            }
+        if (!value) {
+            if (packageName) setAppMonitored(packageName, false);
+            else setIsInterventionEnabled(false);
+            return;
         }
 
-        setIsInterventionEnabled(value);
+        if (await PermissionManager.checkAccessibilityPermission()) {
+            turnOn();
+            return;
+        }
+
+        // Play policy: explain and get consent before sending the user to accessibility settings.
+        if (await PermissionManager.hasAcceptedDisclosure()) {
+            turnOn();
+            await PermissionManager.requestAccessibilityPermission();
+        } else {
+            setShowDisclosure(true);
+        }
+    };
+
+    const handleAcceptDisclosure = async () => {
+        setShowDisclosure(false);
+        await PermissionManager.acceptDisclosure();
+        turnOn();
+        await PermissionManager.requestAccessibilityPermission();
     };
 
     return (
         <View style={styles.container}>
             <View style={styles.leftContent}>
-                <View style={[styles.iconContainer, { backgroundColor: isInterventionEnabled ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 255, 255, 0.05)' }]}>
+                <View style={[styles.iconContainer, { backgroundColor: isOn ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 255, 255, 0.05)' }]}>
                     <Ionicons
-                        name={isInterventionEnabled ? "shield-checkmark-outline" : "shield-outline"}
+                        name={isOn ? "shield-checkmark-outline" : "shield-outline"}
                         size={22}
-                        color={isInterventionEnabled ? "#34C759" : color.secondary}
+                        color={isOn ? "#34C759" : color.secondary}
                     />
                 </View>
                 <View style={styles.textContainer}>
-                    <Text style={styles.label}>Smart Intervention</Text>
-                    <Text style={styles.subLabel}>Pause app after limit exceeded</Text>
+                    <Text style={styles.label}>Mindful Pause</Text>
+                    <Text style={styles.subLabel}>
+                        {packageName ? 'Take a breath before opening this app' : 'Take a breath before opening distracting apps'}
+                    </Text>
                 </View>
             </View>
             <Switch
                 trackColor={{ false: '#333', true: 'rgba(52, 199, 89, 0.4)' }}
-                thumbColor={isInterventionEnabled ? '#34C759' : '#999'}
+                thumbColor={isOn ? '#34C759' : '#999'}
                 ios_backgroundColor="#333"
                 onValueChange={handleToggle}
-                value={isInterventionEnabled}
+                value={isOn}
+            />
+            <AccessibilityDisclosure
+                visible={showDisclosure}
+                onAccept={handleAcceptDisclosure}
+                onDecline={() => setShowDisclosure(false)}
             />
         </View>
     );

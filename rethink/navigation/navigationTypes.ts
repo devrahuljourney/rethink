@@ -12,6 +12,9 @@ export type AppStackParamList = {
     App: undefined;
     AppDetails: { packageName: string };
     AppLimits: { packageName: string };
+};
+
+export type FocusStackParamList = {
     FocusMode: undefined;
     FocusModeDetail: { focusModeId?: string };
 };
@@ -25,6 +28,7 @@ export type BottomTabParamList = {
     HomeStack: NavigatorScreenParams<HomeStackParamList> | undefined;
     CoachStack: NavigatorScreenParams<CoachStackParamList> | undefined;
     AppStack: NavigatorScreenParams<AppStackParamList> | undefined;
+    FocusStack: NavigatorScreenParams<FocusStackParamList> | undefined;
     SettingStack: NavigatorScreenParams<SettingStackParamList> | undefined;
 };
 

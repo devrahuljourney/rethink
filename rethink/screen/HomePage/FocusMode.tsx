@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { color } from '../../constant/color';
 import { useFocusMode } from '../../context/FocusModeContext';
 import { useUsage } from '../../context/UsageContext';
+import GuardStatusBanner from '../Intervention/GuardStatusBanner';
 
 const FocusModeScreen = () => {
     const navigation = useNavigation<any>();
@@ -45,13 +46,11 @@ const FocusModeScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={color.white} />
-                </TouchableOpacity>
                 <Text style={styles.title}>Focus Mode</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
+                <GuardStatusBanner />
                 <View style={styles.infoCard}>
                     <Ionicons name="shield-checkmark-outline" size={32} color={color.primary} />
                     <View style={styles.infoTextContainer}>

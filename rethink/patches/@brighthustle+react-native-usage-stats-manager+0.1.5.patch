@@ -1,0 +1,12 @@
+diff --git a/node_modules/@brighthustle/react-native-usage-stats-manager/android/src/main/java/com/usagestatsmanager/UsageStatsManagerModule.kt b/node_modules/@brighthustle/react-native-usage-stats-manager/android/src/main/java/com/usagestatsmanager/UsageStatsManagerModule.kt
+--- a/node_modules/@brighthustle/react-native-usage-stats-manager/android/src/main/java/com/usagestatsmanager/UsageStatsManagerModule.kt
++++ b/node_modules/@brighthustle/react-native-usage-stats-manager/android/src/main/java/com/usagestatsmanager/UsageStatsManagerModule.kt
+@@ -77,7 +77,7 @@
+     return true
+   }
+ 
+-  @ReactMethod(isBlockingSynchronousMethod = true)
++  @ReactMethod
+   fun showUsageAccessSettings(packageName: String) {
+     val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+     if (packageExists(packageName)) {

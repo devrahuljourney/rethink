@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">rethink</string>
+
+    <string name="guard_service_label">Rethink mindful pause</string>
+    <string name="guard_service_summary">Shows a mindful pause before apps you chose</string>
+    <string name="guard_service_description">Rethink uses this service only to detect which app you open, so it can show a mindful pause before apps you selected and enforce your limits and focus modes. It does not read, collect or share anything shown on your screen, and app names stay on your device.</string>
 </resources>

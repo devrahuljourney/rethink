@@ -1,72 +1,76 @@
-# Rethink: Smart Intervention System Guide
+# Rethink Guard: Mindful Pause, Limits & Focus Enforcement
 
-This guide explains how the Smart Intervention system works, bridging the gap between React Native and Native Android code. 
+The guard decides, natively, what happens when the user opens an app: let it through,
+show the mindful pause, or block it. JS only owns *configuration* and *insights*.
 
-## 🧠 First Principles: How it Works
+## Flow
 
-The system is built on a "Listen → Detect → Intervene" loop.
+```
+Accessibility event (TYPE_WINDOW_STATE_CHANGED)
+  → ForegroundTracker   filters noise → AppSwitch(from, to)
+  → PolicyEngine        (config, session, now) → Decision
+  → GateActivity        native Compose screen, or allow + start session ticker
+  → EventLog            outcome → JS (stats now, backend/coach in P1)
+```
 
-### 1. The Listener (Native Android)
-Android doesn't allow apps to easily "stalk" other apps for security. However, **Accessibility Services** (designed for screen readers) have a unique superpower: they receive updates every time the "window state" changes (i.e., when a new app is opened).
+Decision order (`PolicyEngine`): **hard block → not guarded → stale session → exhausted (shield) → allow**.
 
-*   **`AppForegroundService.kt`**: This is our "spy." It lives in the Android OS. Every time you open an app, Android sends an event here.
-*   **The Bridge**: When this service detects a package name change (e.g., you opened `com.google.android.youtube`), it needs to tell the JS layer.
-    *   **If Rethink is open**: It "emits" an event (`APP_FOREGROUND_CHANGED`) directly to the JS engine.
-    *   **If Rethink is killed**: It starts a **Headless JS Task** (`AppMonitorHeadlessService.kt`), which wakes up a tiny piece of JS code in the background without opening the full app.
+| Concept | Behaviour |
+|---|---|
+| Gate | Breath (configurable seconds) → "Do you still want to open X?" → "How much time do you need?" (5/10/15/30 min, no limit) |
+| Session | Only screen-on foreground time counts. When it runs out the shield asks "Do you still need X?" |
+| Grace window | Returning to an app within `graceSeconds` of leaving skips the gate (minimum 5 s for short interruptions) |
+| Hard block | Limits / focus mode. No way through, only "Close" or "Manage in Rethink" |
+| Exits | Back → home, Home → dismissed, screen off → home |
+| Ignored | Same-app events, keyboards, notification shade, pane-disappeared events, calls (incl. WhatsApp call screens), non-launchable packages |
 
-### 2. The Bridge (Native Module)
-To communicate between JS and Kotlin, we use a **Native Module**.
+## Code map
 
-*   **`AppEventModule.kt`**: This defines the functions you can call from JS (like `openAccessibilitySettings()` or `blockApp()`).
-*   **`AppEventPackage.kt`**: This is just a wrapper that registers the module so React Native can "see" it.
+### Native (`android/app/src/main/java/com/rethink/guard/`)
 
-### 3. The Brain (React Native Context)
-This is where you, the React Native developer, control everything.
+| Path | Role |
+|---|---|
+| `model/` | `GuardConfig`, `Rule`, `Session`, `Decision`: plain data |
+| `policy/PolicyEngine.kt` | Pure decision function (unit tested) |
+| `detect/ForegroundTracker.kt` | Event → real app switch filters (unit tested) |
+| `detect/InstalledApps.kt` | Launcher apps / home screens / keyboards |
+| `state/` | `ConfigRepository`, `SessionRepository`, `AttemptCounter`, `EventLog` (SharedPreferences) |
+| `service/GuardAccessibilityService.kt` | Thin orchestrator + session ticker |
+| `gate/` | `GateActivity` + Compose `GateScreen` |
+| `bridge/` | `GuardModule` RN module |
 
-*   **`InterventionContext.tsx`**: This is the global state. 
-    *   It listens for the native events.
-    *   It checks if the app you opened is in your "Monitored List."
-    *   If it is, it sets `isIntervening` to `true`.
-    *   It uses `AsyncStorage` to remember if the user has enabled the feature.
+Unit tests: `cd android && ./gradlew :app:testDebugUnitTest`
 
-### 4. The UI (React Native Component)
-*   **`InterventionOverlay.tsx`**: A standard React Native component. Because it's managed in the `RootNavigator`, it can "pop up" over the entire app regardless of which screen the user is on.
+### JS
 
----
+| Path | Role |
+|---|---|
+| `services/guard/types.ts` | Wire format shared with `ConfigRepository.kt` |
+| `services/guard/buildGuardConfig.ts` | Pure: app state → rules |
+| `services/guard/guardNative.ts` | Typed bridge |
+| `services/guard/guardEvents.ts` | Drains native outcome events into storage |
+| `utils/useGuardSync.ts` | Pushes config on every change, collects events |
+| `context/InterventionContext.tsx` | User settings (enabled, monitored apps, gate settings) |
+| `screen/Intervention/AccessibilityDisclosure.tsx` | Play prominent disclosure |
 
-## 📂 File Map: Who does What?
+## Adding a feature
 
-| File | Language | Role |
-| :--- | :--- | :--- |
-| `AppForegroundService.kt` | Kotlin | The "Spy" - Detects which app is on screen. |
-| `AppEventModule.kt` | Kotlin | The "Messenger" - Passes data between JS and Android. |
-| `AndroidManifest.xml` | XML | The "ID Card" - Tells Android we have permission to use these powers. |
-| `InterventionContext.tsx` | TSX | The "Brain" - Logic for when to show the overlay. |
-| `InterventionOverlay.tsx` | TSX | The "Face" - The animated UI the user sees. |
-| `AppMonitorTask.ts` | TS | The "Ghost" - JS code that runs even when the app is dead. |
+1. Add a `Rule` subtype in `model/GuardConfig.kt` and parse it in `ConfigRepository`.
+2. Teach `PolicyEngine` where it sits in the decision order, with a unit test.
+3. Emit it from `buildGuardConfig.ts`.
 
----
+Unknown rule types are ignored by older native builds, so JS can ship ahead of native.
 
-## 🚀 What else can you do with these permissions?
+## Google Play compliance checklist
 
-Now that you have **Accessibility** and **Overlay** permissions, you have "Superuser" level UI powers:
-
-### 1. Interactive App Blocking
-Instead of just showing a "Take a Breath" screen, you could:
-*   **Force Close**: Immediately send the user back to the Home Screen if they've used YouTube for more than 1 hour.
-*   **Grayscale Mode**: Use the accessibility service to inject a grayscale filter over specific apps to make them less "addictive."
-
-### 2. Usage Deep-Dives
-*   **Scroll Tracking**: Accessibility services can see how much a user scrolls. You could warn them: "You've scrolled 5 miles on Instagram today. Maybe stop?"
-*   **Button Detection**: You can detect when a user clicks specific buttons (like "Buy Now" on Amazon) and add a "Think twice" confirmation.
-
-### 3. Smart Automation
-*   **Focus Mode**: Automatically turn on "Do Not Disturb" when a user opens a productivity app like Notion or Slack.
-*   **Screen Dimming**: Automatically dim the screen when it's late at night and the user opens a social media app.
-
-### 4. Custom Overlays
-*   **Floating Timers**: Show a small floating countdown timer over TikTok so they know exactly how much time is left.
-*   **Micro-Journaling**: When they open a distracting app, ask a one-sentence question: "What is your goal for opening this right now?"
-
-> [!TIP]
-> **Scalability**: Because we used `Context` and a `monitoredApps` array, you can easily build a UI where users can pick *any* app from their phone to add to the list. The native code doesn't care which app it is; it just reports the name!
+- [x] Prominent in-app disclosure with explicit consent **before** opening accessibility settings
+- [x] Least privilege: `typeWindowStateChanged` only, `canRetrieveWindowContent="false"`
+- [x] `isAccessibilityTool` not set (Rethink is not an accessibility tool)
+- [x] Clear service description in system settings (`guard_service_description`)
+- [x] No `SYSTEM_ALERT_WINDOW` (a bound accessibility service may start the gate activity)
+- [x] No `QUERY_ALL_PACKAGES`: `<queries>` for launcher/home intents only
+- [x] No `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`: user opens the system list themselves
+- [x] No foreground service, so no special-use FGS declaration is needed
+- [ ] Play Console → App content → **Permissions declaration** for Accessibility API, with a short video showing the disclosure and the feature
+- [ ] Privacy policy section matching the disclosure text
+- [ ] Data safety form: update before P1 syncs guard events to the backend

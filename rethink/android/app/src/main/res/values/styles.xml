@@ -6,4 +6,12 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+    <!-- Gate: dark from the first frame so there is no white flash before Compose draws. -->
+    <style name="GateTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/gate_background</item>
+        <item name="android:statusBarColor">@color/gate_background</item>
+        <item name="android:navigationBarColor">@color/gate_background</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
 </resources>

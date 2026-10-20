@@ -6,6 +6,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { color } from '../../constant/color';
 import { useAppLimits } from '../../context/AppLimitContext';
 import { formatTime } from '../../utils/timeUtils';
+import GuardStatusBanner from '../Intervention/GuardStatusBanner';
 
 const AppLimits = () => {
     const route = useRoute<any>();
@@ -79,6 +80,7 @@ const AppLimits = () => {
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
+                <GuardStatusBanner />
                 <View style={styles.appCard}>
                     <Text style={styles.appLabel}>App</Text>
                     <Text style={styles.appValue}>{packageName?.split('.').pop() || 'Selected App'}</Text>

@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Play policy: least privilege. Only foreground-window changes are received, and
+  canRetrieveWindowContent is false, so the service cannot read anything on screen.
+  isAccessibilityTool is intentionally not set: Rethink is not an accessibility tool and
+  is declared through the Play Console Permissions Declaration instead.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/app_name"
+    android:description="@string/guard_service_description"
+    android:summary="@string/guard_service_summary"
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:notificationTimeout="100"
-    android:canRetrieveWindowContent="true"
-    android:accessibilityFlags="flagDefault" />
+    android:accessibilityFlags="flagDefault"
+    android:notificationTimeout="0"
+    android:canRetrieveWindowContent="false" />

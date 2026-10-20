@@ -6,7 +6,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { color } from '../../constant/color';
 import UsageBarChart from './components/UsageBarChart';
 import InterventionToggle from './components/InterventionToggle';
-import { queryAndAggregateUsageStats } from '@brighthustle/react-native-usage-stats-manager';
+import { queryUsage } from '../../services/usage/usageNative';
 import { getStartOfDay, formatTime } from '../../utils/timeUtils';
 import InsightCard from './components/InsightCard';
 import LinearGradient from 'react-native-linear-gradient';
@@ -24,7 +24,6 @@ const AppDetails = () => {
     const { getLimitStatus, addLimit, deleteLimit } = useAppLimits();
     const { getAppCategory } = useUsage();
 
-    const [isInterventionEnabled, setIsInterventionEnabled] = useState(false);
     const [usageHistory, setUsageHistory] = useState<{ value: number; label: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [todayUsage, setTodayUsage] = useState<number>(0);
@@ -47,8 +46,8 @@ const AppDetails = () => {
                 const start = getStartOfDay(date);
                 const end = i === 0 ? Date.now() : start + 24 * 60 * 60 * 1000 - 1;
 
-                const stats = await queryAndAggregateUsageStats(start, end);
-                const appStats = (stats as any)[packageName];
+                const stats = await queryUsage(start, end);
+                const appStats = stats.find(app => app.packageName === packageName);
                 const usageMs = appStats ? appStats.totalTimeInForeground : 0;
 
                 const dayIndex = date.getDay();
@@ -168,10 +167,7 @@ const AppDetails = () => {
                             title="Weekly Usage (hours)"
                         />
 
-                        <InterventionToggle
-                            isEnabled={isInterventionEnabled}
-                            onToggle={(val) => setIsInterventionEnabled(val)}
-                        />
+                        <InterventionToggle packageName={packageName} />
 
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Premium Insights</Text>
