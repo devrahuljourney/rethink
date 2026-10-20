@@ -3,7 +3,7 @@ package com.rethink.guard.gate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -38,11 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -52,10 +52,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rethink.R
 import com.rethink.guard.model.BlockReason
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 // Mirrors ui/theme.ts in the React Native app: paper, ink outlines, flat poster colours.
-private object GateColors {
+internal object GateColors {
     val background = Color(0xFFF3EEE3)
     val card = Color(0xFFFFFCF5)
     val ink = Color(0xFF1B1A1F)
@@ -63,10 +63,10 @@ private object GateColors {
     val mint = Color(0xFF8EDFC0)
     val sun = Color(0xFFFFDD3C)
     val tomato = Color(0xFFFF6B4A)
-    val lilac = Color(0xFFC3B4FF)
+    val line = Color(0xFFE2DACB)
 }
 
-private object GateFonts {
+internal object GateFonts {
     val display = FontFamily(Font(R.font.bricolage_extrabold))
     val body = FontFamily(Font(R.font.figtree_semibold))
     val bodyBold = FontFamily(Font(R.font.figtree_bold))
@@ -75,11 +75,10 @@ private object GateFonts {
 
 private val STROKE = 2.dp
 
-private enum class Step { BREATH, CHOICE, DURATION, SHIELD, BLOCKED }
+private enum class Step { BREATH, INTENT, REFLECT, DURATION, SHIELD, BLOCKED }
 
 private val SESSION_OPTIONS_MINUTES = listOf(5, 10, 15, 30)
-private const val MIN_SCALE = 0.55f
-private const val HALF_BREATH_MS = 4_000
+private const val OPEN_ANYWAY_DELAY_MS = 2_500L
 
 @Composable
 fun GateScreen(
@@ -97,6 +96,11 @@ fun GateScreen(
             },
         )
     }
+    var timeUp by remember(request.nonce) { mutableStateOf(false) }
+    var reason by remember(request.nonce) { mutableStateOf(Reason.SPECIFIC) }
+    val proceed: () -> Unit = {
+        if (request.settings.askSessionLength) step = Step.DURATION else onContinue(null)
+    }
 
     Box(
         modifier = Modifier
@@ -107,91 +111,108 @@ fun GateScreen(
     ) {
         AnimatedContent(
             targetState = step,
-            transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
+            transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(200)) },
             label = "gate-step",
         ) { current ->
             when (current) {
-                Step.BREATH -> BreathStep(request) { step = Step.CHOICE }
-                Step.CHOICE -> ChoiceStep(
-                    request = request,
-                    onDismiss = onDismiss,
-                    onContinue = {
-                        if (request.settings.askSessionLength) step = Step.DURATION else onContinue(null)
-                    },
-                )
+                Step.BREATH -> PauseStep(request, timeUp, onDismiss) { step = Step.INTENT }
+                Step.INTENT -> IntentStep(request, onDismiss) { picked ->
+                    reason = picked
+                    if (picked == Reason.SPECIFIC) proceed() else step = Step.REFLECT
+                }
+                Step.REFLECT -> ReflectStep(request, reason, onDismiss, proceed)
                 Step.DURATION -> DurationStep(request.app.label, onContinue)
-                Step.SHIELD -> ShieldStep(request, onDismiss) { step = Step.BREATH }
+                Step.SHIELD -> ShieldStep(request, onDismiss) {
+                    timeUp = true
+                    step = Step.BREATH
+                }
                 Step.BLOCKED -> BlockedStep(request, onDismiss, onOpenRethink)
             }
         }
     }
 }
 
+/** Asks why the user is here. Naming the urge (bored, avoiding, lonely…) is what loosens its grip. */
 @Composable
-private fun BreathStep(request: GateRequest, onFinished: () -> Unit) {
-    val scale = remember { Animatable(MIN_SCALE) }
-    val progress = remember { Animatable(0f) }
-    var inhaling by remember { mutableStateOf(true) }
-    val totalMs = request.settings.breathSeconds * 1000
-
-    LaunchedEffect(request.nonce) {
-        launch { progress.animateTo(1f, tween(totalMs, easing = LinearEasing)) }
-        var elapsed = 0
-        while (elapsed < totalMs) {
-            val half = minOf(HALF_BREATH_MS, totalMs - elapsed)
-            scale.animateTo(if (inhaling) 1f else MIN_SCALE, tween(half, easing = FastOutSlowInEasing))
-            elapsed += half
-            if (elapsed < totalMs) inhaling = !inhaling
-        }
-        onFinished()
-    }
-
+private fun IntentStep(request: GateRequest, onDismiss: () -> Unit, onPick: (Reason) -> Unit) {
     StepLayout(
-        header = { AppHeader(request.app, "Opening") },
+        header = { AppHeader(request.app, null) },
         body = {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(260.dp)) {
-                Box(
-                    Modifier
-                        .size(260.dp)
-                        .scale(scale.value)
-                        .clip(CircleShape)
-                        .background(GateColors.mint)
-                        .border(STROKE, GateColors.ink, CircleShape),
-                )
-                Text(
-                    if (inhaling) "Breathe in" else "Breathe out",
-                    color = GateColors.ink,
-                    fontSize = 24.sp,
-                    fontFamily = GateFonts.display,
-                )
+            Title("What brought you here?")
+            Spacer(Modifier.height(10.dp))
+            Caption("Be honest. Only you will see this.")
+            Spacer(Modifier.height(28.dp))
+            Column(Modifier.fillMaxWidth()) {
+                Reason.entries.forEachIndexed { i, reason ->
+                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(GateColors.line))
+                    ReasonRow(reason.label, index = i) { onPick(reason) }
+                }
             }
-            Spacer(Modifier.height(32.dp))
-            Title(request.settings.message)
         },
-        footer = {
-            if (request.attemptsToday > 1) {
-                Caption("${ordinal(request.attemptsToday)} time opening ${request.app.label} in the last 24 hours")
-                Spacer(Modifier.height(16.dp))
-            }
-            OutlinedProgress(progress.value)
-        },
+        footer = { SecondaryButton("Never mind, close ${request.app.label}", onDismiss) },
     )
 }
 
 @Composable
-private fun ChoiceStep(request: GateRequest, onDismiss: () -> Unit, onContinue: () -> Unit) {
+private fun ReasonRow(text: String, index: Int, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val entrance = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(index * 60L)
+        entrance.animateTo(1f, tween(350, easing = FastOutSlowInEasing))
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .graphicsLayer {
+                alpha = entrance.value
+                translationY = (1f - entrance.value) * 10.dp.toPx()
+            }
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (pressed) GateColors.card else Color.Transparent)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 8.dp),
+    ) {
+        Text(text, color = GateColors.ink, fontSize = 17.sp, fontFamily = GateFonts.bodyBold, modifier = Modifier.weight(1f))
+        Text("→", color = GateColors.muted, fontSize = 17.sp, fontFamily = GateFonts.mono)
+    }
+}
+
+/** Mirrors the reason back with one small, doable alternative. "Open anyway" arrives a beat later. */
+@Composable
+private fun ReflectStep(request: GateRequest, reason: Reason, onDismiss: () -> Unit, onContinue: () -> Unit) {
     val appName = request.app.label
+    val reflection = PauseContent.reflection(reason, appName) ?: return
+    var ready by remember { mutableStateOf(false) }
+    val openAnyway by animateFloatAsState(if (ready) 1f else 0f, tween(600), label = "open-anyway")
+    LaunchedEffect(Unit) {
+        delay(OPEN_ANYWAY_DELAY_MS)
+        ready = true
+    }
     StepLayout(
         header = { AppHeader(request.app, null) },
         body = {
-            Title("Do you still want to open $appName?")
+            Text(
+                reason.label.uppercase(),
+                color = GateColors.muted,
+                fontSize = 12.sp,
+                letterSpacing = 1.2.sp,
+                fontFamily = GateFonts.mono,
+            )
+            Spacer(Modifier.height(14.dp))
+            Title(reflection.title)
             Spacer(Modifier.height(12.dp))
-            Caption("Closing it now is a small win. Your future self will thank you.")
+            Caption(reflection.body)
         },
         footer = {
-            PrimaryButton("I don't need it right now", onDismiss)
+            PrimaryButton("Close $appName", onDismiss)
             Spacer(Modifier.height(8.dp))
-            SecondaryButton("Continue to $appName", onContinue)
+            Box(Modifier.alpha(openAnyway)) {
+                SecondaryButton("Open anyway") { if (ready) onContinue() }
+            }
         },
     )
 }
@@ -281,7 +302,7 @@ private fun StepLayout(
 }
 
 @Composable
-private fun AppHeader(app: AppInfo, prefix: String?) {
+internal fun AppHeader(app: AppInfo, prefix: String?) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -338,7 +359,7 @@ private fun PrimaryButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SecondaryButton(text: String, onClick: () -> Unit) {
+internal fun SecondaryButton(text: String, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -397,26 +418,6 @@ private fun PopBox(
 }
 
 @Composable
-private fun OutlinedProgress(progress: Float) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(14.dp)
-            .clip(shape)
-            .background(GateColors.card)
-            .border(STROKE, GateColors.ink, shape),
-    ) {
-        Box(
-            Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .background(GateColors.lilac),
-        )
-    }
-}
-
-@Composable
 private fun Sticker(text: String, fill: Color) {
     Box(
         Modifier
@@ -428,14 +429,4 @@ private fun Sticker(text: String, fill: Color) {
     ) {
         Text(text.uppercase(), color = GateColors.ink, fontSize = 13.sp, fontFamily = GateFonts.display, letterSpacing = 0.8.sp)
     }
-}
-
-private fun ordinal(n: Int): String {
-    val suffix = if (n % 100 in 11..13) "th" else when (n % 10) {
-        1 -> "st"
-        2 -> "nd"
-        3 -> "rd"
-        else -> "th"
-    }
-    return "$n$suffix"
 }
