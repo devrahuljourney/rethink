@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip" href="#tour">Skip to the tour</a>
+  <a class="skip" href="#built">Skip to how it's built</a>
 
   <header class="bar">
     <a class="wordmark" href="#top" aria-label="Rethink, back to top">rethink<span class="dot">.</span></a>
     <nav aria-label="Sections">
-      <a href="#tour">Tour</a>
       <a href="#built">How it's built</a>
+      <a href="#features">Features</a>
       <a class="btn btn-ink btn-sm" href="#download">Get the APK</a>
     </nav>
   </header>
@@ -27,11 +27,17 @@
   <main id="top">
     <!-- Hero -->
     <section class="hero">
+      <div class="hook">
+        <p class="hook-line">In one day, I opened an app</p>
+        <p class="count"><span class="odo" data-odo="417" aria-label="417">417</span></p>
+        <p class="hook-line">times. That's one every 3 minutes.</p>
+      </div>
+
       <div class="hero-copy">
         <h1 class="display">
           Pause before you <span class="marker">scroll<svg viewBox="0 0 200 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 15 C 50 8, 120 7, 196 12 L 196 21 C 120 17, 60 18, 4 22 Z"/></svg></span>.
         </h1>
-        <p class="lede">Rethink is an Android app that puts a short breathing pause between you and the apps you open without thinking. It also shows where your day went, sets daily limits and keeps focus hours quiet.</p>
+        <p class="lede">Rethink is an Android app that asks for one slow breath before you open the apps you reach for on autopilot.</p>
         <div class="actions">
           <a class="btn btn-ink" data-apk href="#download">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
@@ -45,69 +51,47 @@
         <p class="fine">Version 1.0 for Android 7 and up. Free, no ads.</p>
       </div>
 
-      <div class="hero-phone" aria-label="Rethink's mindful pause, playing on a phone">
-        <div class="breath" aria-hidden="true"><span></span></div>
-        <div class="phone">
+      <div class="try" data-try>
+        <p class="sticker" data-sticker aria-hidden="true">
+          Tap Instagram
+          <svg viewBox="0 0 80 40"><path d="M4 8 C 30 4, 52 14, 72 30 M 72 30 L 58 29 M 72 30 L 70 16"/></svg>
+        </p>
+        <div class="phone phone-live">
           <div class="status" aria-hidden="true"><span>9:41</span><i></i></div>
-          <video src="assets/clips/gate.mp4" poster="assets/clips/gate-poster.webp" autoplay muted loop playsinline preload="auto"></video>
-        </div>
-      </div>
-    </section>
+          <div class="device" data-device>
+            <!-- Launcher -->
+            <div class="scr scr-home on" data-scr="home">
+              <div class="home-clock">
+                <p class="home-time">9:41</p>
+                <p class="home-date" data-date></p>
+              </div>
+              <div class="home-grid">
+                <button type="button" class="appi" data-app="Maps"><span class="ic ic-maps"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></span>Maps</button>
+                <button type="button" class="appi" data-app="Camera"><span class="ic ic-camera"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.5-2.5h4L15.5 7"/></svg></span>Camera</button>
+                <button type="button" class="appi" data-app="Messages"><span class="ic ic-msg"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/></svg></span>Messages</button>
+                <button type="button" class="appi" data-app="Phone"><span class="ic ic-phone"><svg viewBox="0 0 24 24"><path d="M6.6 3.5h2.6l1.6 4.2-2 1.4a11 11 0 0 0 6.1 6.1l1.4-2 4.2 1.6v2.6A2.6 2.6 0 0 1 17.9 20 14.4 14.4 0 0 1 4 6.1 2.6 2.6 0 0 1 6.6 3.5z"/></svg></span>Phone</button>
+                <button type="button" class="appi appi-ig" data-app="Instagram" aria-label="Open Instagram"><span class="ic ic-ig"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="16.8" cy="7.2" r="0.6" class="fill"/></svg></span>Instagram</button>
+                <button type="button" class="appi" data-app="YouTube"><span class="ic ic-yt"><svg viewBox="0 0 24 24"><path d="M10 8.5v7l6-3.5z" class="fill"/></svg></span>YouTube</button>
+                <button type="button" class="appi" data-app="WhatsApp"><span class="ic ic-wa"><svg viewBox="0 0 24 24"><path d="M5 19l1.2-3.6A7.5 7.5 0 1 1 9 18.3z"/></svg></span>WhatsApp</button>
+                <button type="button" class="appi" data-app="Rethink"><span class="ic ic-rt"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" class="mint"/><circle cx="17.5" cy="17.5" r="2.2" class="tom"/></svg></span>Rethink</button>
+              </div>
+            </div>
 
-    <!-- Tour -->
-    <section class="tour" id="tour" aria-labelledby="tour-title">
-      <div class="section-head">
-        <h2 id="tour-title" class="h2">Everything it does, screen by screen</h2>
-        <p>Scroll through the app the way you'd use it on a normal day.</p>
-      </div>
+            <!-- Rethink's pause, rebuilt from GateScreen.kt -->
+            <div class="scr scr-gate" data-scr="gate" aria-live="polite"></div>
 
-      <div class="tour-grid">
-        <div class="tour-stage">
-          <div class="phone phone-tour">
-            <div class="status" aria-hidden="true"><span>9:41</span><i></i></div>
-            <div class="screens" data-screens></div>
+            <!-- Stand-in for the guarded app -->
+            <div class="scr scr-app" data-scr="app" aria-hidden="true">
+              <div class="feed-top"><b>Instagram</b><i></i><i></i></div>
+              <div class="feed-stories"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="feed-post"><div class="feed-head"><i></i><b></b></div><div class="feed-img"></div><div class="feed-lines"><b></b><b></b></div></div>
+              <div class="feed-post"><div class="feed-head"><i></i><b></b></div><div class="feed-img"></div></div>
+            </div>
+
+            <button type="button" class="home-bar" data-home aria-label="Go to the home screen"></button>
           </div>
-          <ol class="rail" aria-hidden="true" data-rail></ol>
         </div>
-
-        <div class="tour-steps">
-          <article class="step" data-media='[{"v":"dial"}]'>
-            <h3>Your day as a clock</h3>
-            <p>Home is a 24-hour dial. Each tick is an hour, and its length is how long you were on your phone. Tap an hour to see which apps used it.</p>
-            <p class="aside">On this day the busiest hour was 7 PM: 51 minutes, 83 opens.</p>
-          </article>
-
-          <article class="step" data-media='[{"i":"week"},{"i":"month"}]'>
-            <h3>Week and month at a glance</h3>
-            <p>Switch to Week or Month to see the trend: your heaviest and lightest days, the daily average and how many times you opened an app.</p>
-          </article>
-
-          <article class="step" data-media='[{"i":"apps"}]'>
-            <h3>Every app, ranked</h3>
-            <p>Each app shows time spent and how many times you opened it. Filter by social, entertainment or productivity, or search for one app.</p>
-          </article>
-
-          <article class="step step-key" data-media='[{"i":"insta_breathe"},{"i":"gate_in_big"},{"i":"gate_why"},{"i":"gate_time"}]'>
-            <h3>The pause</h3>
-            <p>Turn on <em>Breathe before opening</em> for any app. The next time you open it, Rethink steps in first:</p>
-            <ol class="flow-list">
-              <li>A few slow breaths, timed by the circle.</li>
-              <li>What brought you here? Bored, putting something off, just habit.</li>
-              <li>How much time do you need? 5, 10, 15 or 30 minutes.</li>
-            </ol>
-            <p>When that time runs out, it checks in again. Coming back within a few seconds doesn't count as a new open.</p>
-          </article>
-
-          <article class="step" data-media='[{"i":"limit"},{"i":"focus_new"}]'>
-            <h3>Limits and focus hours</h3>
-            <p>Give an app a daily limit, and once it's used up the app stays closed for the rest of the day. Focus schedules mute the apps you choose between set hours, on the days you pick.</p>
-          </article>
-
-          <article class="step" data-media='[{"i":"coach"}]'>
-            <h3>A coach that reads your week</h3>
-            <p>The coach looks at how you actually used your phone and gives you one mission for today, with a chart of where the minutes went.</p>
-          </article>
-        </div>
+        <p class="try-say" data-say aria-live="polite">Tap Instagram. On a phone with Rethink, this is where the pause starts.</p>
       </div>
     </section>
 
@@ -115,7 +99,7 @@
     <section class="built" id="built" aria-labelledby="built-title">
       <div class="section-head">
         <h2 id="built-title" class="h2">How it's built</h2>
-        <p>React Native draws the screens. The pause itself is native Kotlin: an accessibility service sees the app coming to the front, and a small pure function decides what happens next.</p>
+        <p>React Native draws the screens. The pause is native Kotlin: an accessibility service sees an app come to the front, and one small pure function decides what happens next.</p>
       </div>
 
       <figure class="pipeline" aria-labelledby="pipe-cap">
@@ -152,7 +136,7 @@
           <p class="result" data-result><span class="chip">Pick a situation</span><span data-result-text></span></p>
         </div>
 
-        <pre class="code" aria-label="PolicyEngine.kt"><code data-code><span class="c">// PolicyEngine.kt: no Android, no I/O. Order matters.</span>
+        <pre class="code" id="built-more-code" aria-label="PolicyEngine.kt"><code data-code><span class="c">// PolicyEngine.kt: no Android, no I/O. Order matters.</span>
 <span class="k">fun</span> <span class="f">decide</span>(
     pkg: <span class="t">String</span>, config: <span class="t">GuardConfig</span>,
     session: <span class="t">Session</span>?, now: <span class="t">Long</span>,
@@ -176,14 +160,162 @@
 }</code></pre>
       </div>
 
-      <dl class="stack">
+      <button type="button" class="more-toggle" data-more aria-expanded="false" aria-controls="built-more-code built-more-stack">Show the Kotlin and the full stack</button>
+
+      <dl class="stack" id="built-more-stack">
         <div><dt>Screens</dt><dd>React Native 0.83 and TypeScript, React Navigation, SVG charts, a small motion kit for entrances and presses.</dd></div>
         <div><dt>Native Android</dt><dd>Kotlin AccessibilityService, Jetpack Compose for the pause screen, UsageStatsManager for screen time, background fetch.</dd></div>
         <div><dt>Bridge</dt><dd>Typed native modules. JS pushes the rules to Kotlin on every change and drains outcome events back, so the pause works even when the JS side is asleep.</dd></div>
         <div><dt>Backend</dt><dd>Node and Express on Vercel, Supabase for accounts and data, Gemini through LangChain for the coach.</dd></div>
         <div><dt>Tests</dt><dd>33 JVM unit tests on the decision engine, the app-switch filter, the pause content and the screen-time math.</dd></div>
-        <div><dt>Privacy</dt><dd>The accessibility service only listens for window changes and has <code>canRetrieveWindowContent="false"</code>. It can't read anything on your screen.</dd></div>
       </dl>
+    </section>
+
+    <!-- Tour: the phone stays put, each step drives it -->
+    <section class="tour" id="features" data-tone="mint" aria-labelledby="tour-title">
+      <div class="section-head">
+        <h2 id="tour-title" class="h2">Everything it does, screen by screen</h2>
+        <p>Scroll through the app, and tap the phone as you go.</p>
+      </div>
+
+      <div class="tour-track" data-track>
+        <div class="tour-pin">
+          <div class="phone phone-live phone-tour">
+            <div class="status" aria-hidden="true"><span>9:41</span><i></i></div>
+            <div class="device" data-device data-tour-device>
+              <!-- Home, rebuilt from Home.tsx + DayDial.tsx -->
+              <div class="scr scr-homeapp on" data-scr="home">
+                <p class="h-date">WEDNESDAY 28 OCTOBER</p>
+                <p class="h-greet">Good evening, Rahul<span>.</span></p>
+                <span class="h-refresh" aria-hidden="true">↻</span>
+                <div class="h-seg" role="tablist" aria-label="Range">
+                  <button type="button" role="tab" aria-selected="true" data-go="today">Today</button>
+                  <button type="button" role="tab" aria-selected="false" data-go="week">Week</button>
+                  <button type="button" role="tab" aria-selected="false" data-go="month">Month</button>
+                </div>
+                <div class="h-dial">
+                  <svg class="dial" data-dial viewBox="0 0 340 340" role="slider" tabindex="0"
+                       aria-label="Screen time by hour. Use the arrow keys to pick an hour, Escape for the whole day."
+                       aria-valuemin="0" aria-valuemax="23"></svg>
+                  <div class="dial-center" aria-hidden="true">
+                    <p class="dial-label" data-dial-label>TODAY</p>
+                    <p class="dial-total" data-dial-total>3h 36m</p>
+                    <p class="dial-cap" data-dial-cap>↓ 29% vs yesterday</p>
+                  </div>
+                </div>
+                <div class="h-below" data-h-below>
+                  <p class="h-hint">Tap an hour, a day or a date to see what happened.</p>
+                  <dl class="h-stats">
+                    <div><dt>PEAK HOUR</dt><dd>7 PM</dd><dd class="s">51m used</dd></div>
+                    <div><dt>OPENS</dt><dd>417</dd><dd class="s">every 3 min</dd></div>
+                    <div><dt>OFF PHONE</dt><dd>5h</dd><dd class="s">longest stretch</dd></div>
+                  </dl>
+                </div>
+                <div class="panel" data-panel hidden aria-live="polite"></div>
+                <div class="h-tabbar" aria-hidden="true"><b>Today</b><span>Coach</span><span>Apps</span><span>Focus</span><span>You</span></div>
+              </div>
+              <div class="scr" data-scr="week"><img src="assets/screens/week.webp" alt="Week view: 38h 6m over the last 7 days, about 5h 26m a day" loading="lazy"><span class="shot-seg"><button type="button" data-go="today" aria-label="Today"></button><button type="button" data-go="week" aria-label="Week"></button><button type="button" data-go="month" aria-label="Month"></button></span></div>
+              <div class="scr" data-scr="month"><img src="assets/screens/month.webp" alt="Month view: 53h 33m over the last 30 days, as a calendar" loading="lazy"><span class="shot-seg"><button type="button" data-go="today" aria-label="Today"></button><button type="button" data-go="week" aria-label="Week"></button><button type="button" data-go="month" aria-label="Month"></button></span></div>
+              <img class="scr" data-scr="apps" src="assets/screens/apps.webp" alt="Apps list: Instagram 1h 17m and 27 opens at the top" loading="lazy">
+            <div class="scr scr-limit" data-scr="limit">
+              <div class="lim-top"><span class="lim-back" aria-hidden="true">←</span><b>New limit</b></div>
+              <h3 class="lim-title">How long on <mark>Instagram</mark> each day?</h3>
+              <div class="lim-time">
+                <div><b data-lim-h>1</b><span>HOURS</span></div>
+                <i>:</i>
+                <div><b data-lim-m>0</b><span>MINUTES</span></div>
+              </div>
+              <p class="lim-kicker">QUICK PICKS</p>
+              <div class="lim-picks">
+                <button type="button" data-pick="15">15m</button>
+                <button type="button" data-pick="30">30m</button>
+                <button type="button" data-pick="60" class="on">1h</button>
+                <button type="button" data-pick="120">2h</button>
+              </div>
+              <p class="lim-cap">When the time runs out, Instagram is blocked for the rest of the day.</p>
+              <button type="button" class="lim-save" data-lim-save>Save limit</button>
+            </div>
+            <img class="scr" data-scr="focus" src="assets/screens/focus_new.webp" alt="Focus schedule: My Focus, 09:00 to 17:00, Monday to Friday" loading="lazy">
+            <div class="scr scr-app" data-scr="feed" aria-hidden="true">
+              <div class="feed-top"><b>Instagram</b><i></i><i></i></div>
+              <div class="feed-stories"><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="feed-post"><div class="feed-head"><i></i><b></b></div><div class="feed-img"></div><div class="feed-lines"><b></b><b></b></div></div>
+              <div class="feed-post"><div class="feed-head"><i></i><b></b></div><div class="feed-img"></div></div>
+            </div>
+            <div class="scr scr-gate" data-scr="blocked">
+              <div class="g g-step">
+                <p class="g-pill"><span class="pill-ic" aria-hidden="true"></span>Instagram</p>
+                <div class="g-body">
+                  <p class="g-sticker">BLOCKED</p>
+                  <h3 class="g-title">Instagram is blocked</h3>
+                  <p class="g-cap" data-block-reason></p>
+                </div>
+                <div class="g-foot">
+                  <button type="button" class="g-primary" data-block-close>Close</button>
+                  <button type="button" class="g-secondary" data-block-close>Manage in Rethink</button>
+                </div>
+              </div>
+            </div>
+              <img class="scr" data-scr="coach" src="assets/screens/coach.webp" alt="Coach: today's mission, Operation: Reclaim Your Evenings, with a chart of minutes by kind of app" loading="lazy">
+            </div>
+          </div>
+
+          <div class="tour-panel">
+            <ol class="chapters" aria-label="Features">
+              <li><button type="button" data-chap-go="day"><span>1</span><em>Your day</em></button></li>
+              <li><button type="button" data-chap-go="trend"><span>2</span><em>Week, month, apps</em></button></li>
+              <li><button type="button" data-chap-go="rules"><span>3</span><em>Limits</em></button></li>
+              <li><button type="button" data-chap-go="coach"><span>4</span><em>Coach</em></button></li>
+            </ol>
+
+            <div class="chap" data-chap="day">
+              <h3>Your day as a clock</h3>
+              <div class="seg" role="tablist" aria-label="Range">
+                <button type="button" role="tab" data-beat-go="day-all">Whole day</button>
+                <button type="button" role="tab" data-beat-go="day-hour">One hour</button>
+              </div>
+              <p class="beat-say" data-say-for="day-all">Home is a 24-hour dial. Each bar is an hour, and its length is how long you were on your phone. The busiest hour is in tomato.</p>
+              <p class="beat-say" data-say-for="day-hour">Tap an hour on the phone to see what happened in it. 7 PM was the busiest: 51 minutes and 83 opens, mostly Instagram.</p>
+              <p class="note">Hour totals are from one of my days. The app split per hour is approximate.</p>
+            </div>
+
+            <div class="chap" data-chap="trend">
+              <h3>Week, month and every app</h3>
+              <div class="seg" role="tablist" aria-label="View">
+                <button type="button" role="tab" data-beat-go="week">Week</button>
+                <button type="button" role="tab" data-beat-go="month">Month</button>
+                <button type="button" role="tab" data-beat-go="apps">Apps</button>
+              </div>
+              <p class="beat-say" data-say-for="week">The last 7 days: your daily average, heaviest and lightest day, and how many times you opened an app.</p>
+              <p class="beat-say" data-say-for="month">The last 30 days as a calendar, darker on the days you used your phone more.</p>
+              <p class="beat-say" data-say-for="apps">Every app with its time and number of opens. Filter by kind of app, or search for one.</p>
+            </div>
+
+            <div class="chap" data-chap="rules">
+              <h3>Limits that hold</h3>
+              <div class="seg" role="tablist" aria-label="Kind of rule">
+                <button type="button" role="tab" data-beat-go="limit">Daily limit</button>
+                <button type="button" role="tab" data-beat-go="focus">Focus hours</button>
+              </div>
+              <p class="beat-say" data-say-for="limit">Pick a limit on the phone and tap <b>Save limit</b>. Then watch the day go by.</p>
+              <p class="beat-say" data-say-for="focus">Focus hours mute the apps you choose, on the days you pick. Try opening Instagram while one is on.</p>
+              <div class="meter" data-meter hidden>
+                <div class="meter-top"><b>Instagram today</b><span data-meter-text></span></div>
+                <div class="meter-track"><i data-meter-fill></i></div>
+              </div>
+              <button type="button" class="btn btn-ink" data-focus-try hidden>Open Instagram at 10:30</button>
+            </div>
+
+            <div class="chap" data-chap="coach">
+              <h3>A coach that reads your week</h3>
+              <p class="beat-say" data-say-for="coach">The coach looks at how you actually used your phone, then gives you one mission for today and a chart of where the minutes went.</p>
+              <p class="note">Built on Gemini, through a Node and Express API.</p>
+            </div>
+
+            <p class="scroll-hint" aria-hidden="true">Keep scrolling, or tap a tab.</p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Download -->
@@ -242,6 +374,8 @@
   </dialog>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+  <script src="pause.js" defer></script>
+  <script src="features.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 </html>

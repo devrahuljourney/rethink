@@ -16,6 +16,30 @@ const onScroll = () => bar.classList.toggle('scrolled', window.scrollY > 8);
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
+/* ---------- 417: digits roll in left to right ---------- */
+const odo = document.querySelector('[data-odo]');
+if (odo) {
+  const digits = odo.dataset.odo.split('');
+  odo.textContent = '';
+  const reels = digits.map((d) => {
+    const cell = document.createElement('span');
+    cell.className = 'digit';
+    cell.setAttribute('aria-hidden', 'true');
+    const reel = document.createElement('span');
+    // Two full turns of 0-9, then the target, so every reel spins before it lands.
+    reel.innerHTML = [...Array(20).keys()].map((n) => `<i>${n % 10}</i>`).join('') + `<i>${d}</i>`;
+    cell.appendChild(reel);
+    odo.appendChild(cell);
+    return reel;
+  });
+  const land = () => reels.forEach((reel, i) => {
+    reel.style.transitionDelay = `${i * 140}ms`;
+    reel.style.transform = `translateY(${-20 * 0.9}em)`;
+  });
+  if (reduceMotion) { reels.forEach((r) => { r.style.transition = 'none'; }); land(); }
+  else document.fonts.ready.then(() => requestAnimationFrame(() => requestAnimationFrame(land)));
+}
+
 /* ---------- Demo video ---------- */
 const dialog = document.querySelector('[data-demo]');
 const demoVideo = dialog.querySelector('video');
@@ -37,64 +61,20 @@ window.addEventListener('load', () => {
   box.querySelector('svg path')?.setAttribute('fill', '#1B1A1F');
 });
 
-/* ---------- Tour: sticky phone follows the step in view ---------- */
-const steps = [...document.querySelectorAll('.step')];
-const screens = document.querySelector('[data-screens]');
-const rail = document.querySelector('[data-rail]');
+/* ---------- Every live phone draws a 392 dp device scaled into its frame ---------- */
+document.querySelectorAll('[data-device]').forEach((device) => {
+  new ResizeObserver(() => device.style.setProperty('--s', device.parentElement.clientWidth / 392)).observe(device.parentElement);
+});
 
-const media = steps.map((step) => JSON.parse(step.dataset.media).map((m) => {
-  let el;
-  if (m.v) {
-    el = document.createElement('video');
-    Object.assign(el, { muted: true, loop: true, playsInline: true, preload: 'metadata' });
-    el.src = `assets/clips/${m.v}.mp4`;
-    el.poster = `assets/clips/${m.v}-poster.webp`;
-  } else {
-    el = document.createElement('img');
-    el.src = `assets/screens/${m.i}.webp`;
-    el.alt = '';
-    el.loading = 'lazy';
-    el.decoding = 'async';
-  }
-  screens.appendChild(el);
-  return el;
-}));
-steps.forEach(() => rail.appendChild(document.createElement('li')));
-
-let active = -1;
-let cycle;
-
-function show(el) {
-  screens.querySelectorAll('.on').forEach((o) => {
-    if (o === el) return;
-    o.classList.remove('on');
-    if (o.tagName === 'VIDEO') o.pause();
-  });
-  el.classList.add('on');
-  if (el.tagName === 'VIDEO') { el.currentTime = 0; el.play().catch(() => {}); }
-}
-
-function activate(i) {
-  if (i === active) return;
-  active = i;
-  steps.forEach((s, j) => s.classList.toggle('on', j === i));
-  [...rail.children].forEach((r, j) => r.classList.toggle('on', j === i));
-  clearInterval(cycle);
-  const list = media[i];
-  let k = 0;
-  show(list[0]);
-  // Steps with several screens flip through them while the step is in view.
-  if (list.length > 1 && !reduceMotion) {
-    cycle = setInterval(() => { k = (k + 1) % list.length; show(list[k]); }, 2600);
-  }
-}
-
-const io = new IntersectionObserver((entries) => {
-  entries.forEach((e) => { if (e.isIntersecting) activate(steps.indexOf(e.target)); });
-  // On phones the sticky phone covers the top half, so the step "in view" is the one just below it.
-}, { rootMargin: window.matchMedia('(max-width: 760px)').matches ? '-58% 0px -32% 0px' : '-45% 0px -45% 0px' });
-steps.forEach((s) => io.observe(s));
-activate(0);
+/* ---------- Phones: the Kotlin and the stack list fold away under "How it's built" ---------- */
+const moreBtn = document.querySelector('[data-more]');
+moreBtn?.addEventListener('click', () => {
+  const open = moreBtn.getAttribute('aria-expanded') !== 'true';
+  moreBtn.setAttribute('aria-expanded', String(open));
+  moreBtn.textContent = open ? 'Show less' : 'Show the Kotlin and the full stack';
+  document.querySelector('.built').classList.toggle('open', open);
+  if (!open) document.querySelector('.engine').scrollIntoView({ block: 'start' });
+});
 
 /* ---------- Decision engine ---------- */
 // Each case lists the checks PolicyEngine runs, in order, until one returns.
@@ -146,7 +126,7 @@ function run(name) {
   setTimeout(() => {
     if (id !== runId) return;
     const decided = checkItems.findIndex((x) => x.classList.contains('hit'));
-    checkItems.forEach((li, j) => { if (!li.dataset.a && (decided === -1 || j > decided)) li.classList.add('skip'); });
+    checkItems.forEach((li, j) => { if (!li.dataset.a && (decided === -1 || j > decided)) li.classList.add('skipped'); });
     codeLines.forEach((l) => l.classList.toggle('lit', l.dataset.line === c.line));
     chip.textContent = c.kind;
     chip.dataset.kind = c.kind;

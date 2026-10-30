@@ -104,10 +104,17 @@ android {
         }
 
         release {
-            storeFile file("release-key.keystore")
-            storePassword project.env.get("STORE_PASSWORD")
-            keyAlias project.env.get("KEY_ALIAS")
-            keyPassword project.env.get("STORE_PASSWORD")
+            // Read from android/keystore.properties (gitignored), not .env: react-native-config
+            // copies every .env value into the app, so secrets there would ship inside the APK.
+            def props = new Properties()
+            def keystoreProps = rootProject.file("keystore.properties")
+            if (keystoreProps.exists()) {
+                keystoreProps.withInputStream { props.load(it) }
+                storeFile file(props["storeFile"])
+                storePassword props["storePassword"]
+                keyAlias props["keyAlias"]
+                keyPassword props["keyPassword"]
+            }
         }
     }
 
