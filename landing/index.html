@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rethink for Android</title>
+  <meta name="description" content="Rethink is an Android app that puts a short breathing pause between you and the apps you open without thinking. See every screen, then download the APK.">
+  <meta name="theme-color" content="#F3EEE3">
+  <meta property="og:title" content="Rethink for Android">
+  <meta property="og:description" content="A short breathing pause between you and the apps you open without thinking.">
+  <meta property="og:image" content="assets/clips/demo-poster.webp">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#tour">Skip to the tour</a>
+
+  <header class="bar">
+    <a class="wordmark" href="#top" aria-label="Rethink, back to top">rethink<span class="dot">.</span></a>
+    <nav aria-label="Sections">
+      <a href="#tour">Tour</a>
+      <a href="#built">How it's built</a>
+      <a class="btn btn-ink btn-sm" href="#download">Get the APK</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-copy">
+        <h1 class="display">
+          Pause before you <span class="marker">scroll<svg viewBox="0 0 200 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 15 C 50 8, 120 7, 196 12 L 196 21 C 120 17, 60 18, 4 22 Z"/></svg></span>.
+        </h1>
+        <p class="lede">Rethink is an Android app that puts a short breathing pause between you and the apps you open without thinking. It also shows where your day went, sets daily limits and keeps focus hours quiet.</p>
+        <div class="actions">
+          <a class="btn btn-ink" data-apk href="#download">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            Download the APK
+          </a>
+          <button class="btn btn-line" type="button" data-open-demo>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+            Watch the 1-minute demo
+          </button>
+        </div>
+        <p class="fine">Version 1.0 for Android 7 and up. Free, no ads.</p>
+      </div>
+
+      <div class="hero-phone" aria-label="Rethink's mindful pause, playing on a phone">
+        <div class="breath" aria-hidden="true"><span></span></div>
+        <div class="phone">
+          <div class="status" aria-hidden="true"><span>9:41</span><i></i></div>
+          <video src="assets/clips/gate.mp4" poster="assets/clips/gate-poster.webp" autoplay muted loop playsinline preload="auto"></video>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tour -->
+    <section class="tour" id="tour" aria-labelledby="tour-title">
+      <div class="section-head">
+        <h2 id="tour-title" class="h2">Everything it does, screen by screen</h2>
+        <p>Scroll through the app the way you'd use it on a normal day.</p>
+      </div>
+
+      <div class="tour-grid">
+        <div class="tour-stage">
+          <div class="phone phone-tour">
+            <div class="status" aria-hidden="true"><span>9:41</span><i></i></div>
+            <div class="screens" data-screens></div>
+          </div>
+          <ol class="rail" aria-hidden="true" data-rail></ol>
+        </div>
+
+        <div class="tour-steps">
+          <article class="step" data-media='[{"v":"dial"}]'>
+            <h3>Your day as a clock</h3>
+            <p>Home is a 24-hour dial. Each tick is an hour, and its length is how long you were on your phone. Tap an hour to see which apps used it.</p>
+            <p class="aside">On this day the busiest hour was 7 PM: 51 minutes, 83 opens.</p>
+          </article>
+
+          <article class="step" data-media='[{"i":"week"},{"i":"month"}]'>
+            <h3>Week and month at a glance</h3>
+            <p>Switch to Week or Month to see the trend: your heaviest and lightest days, the daily average and how many times you opened an app.</p>
+          </article>
+
+          <article class="step" data-media='[{"i":"apps"}]'>
+            <h3>Every app, ranked</h3>
+            <p>Each app shows time spent and how many times you opened it. Filter by social, entertainment or productivity, or search for one app.</p>
+          </article>
+
+          <article class="step step-key" data-media='[{"i":"insta_breathe"},{"i":"gate_in_big"},{"i":"gate_why"},{"i":"gate_time"}]'>
+            <h3>The pause</h3>
+            <p>Turn on <em>Breathe before opening</em> for any app. The next time you open it, Rethink steps in first:</p>
+            <ol class="flow-list">
+              <li>A few slow breaths, timed by the circle.</li>
+              <li>What brought you here? Bored, putting something off, just habit.</li>
+              <li>How much time do you need? 5, 10, 15 or 30 minutes.</li>
+            </ol>
+            <p>When that time runs out, it checks in again. Coming back within a few seconds doesn't count as a new open.</p>
+          </article>
+
+          <article class="step" data-media='[{"i":"limit"},{"i":"focus_new"}]'>
+            <h3>Limits and focus hours</h3>
+            <p>Give an app a daily limit, and once it's used up the app stays closed for the rest of the day. Focus schedules mute the apps you choose between set hours, on the days you pick.</p>
+          </article>
+
+          <article class="step" data-media='[{"i":"coach"}]'>
+            <h3>A coach that reads your week</h3>
+            <p>The coach looks at how you actually used your phone and gives you one mission for today, with a chart of where the minutes went.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it's built -->
+    <section class="built" id="built" aria-labelledby="built-title">
+      <div class="section-head">
+        <h2 id="built-title" class="h2">How it's built</h2>
+        <p>React Native draws the screens. The pause itself is native Kotlin: an accessibility service sees the app coming to the front, and a small pure function decides what happens next.</p>
+      </div>
+
+      <figure class="pipeline" aria-labelledby="pipe-cap">
+        <ol>
+          <li><b>Window event</b><span>Android reports that a new window came to the front.</span><code>AccessibilityService</code></li>
+          <li><b>Real app switch?</b><span>Keyboards, the notification shade, calls and repeats are filtered out.</span><code>ForegroundTracker</code></li>
+          <li><b>Decision</b><span>Block, gate, shield or allow, from config and the current session.</span><code>PolicyEngine</code></li>
+          <li><b>Pause screen</b><span>A native Compose screen opens over the app.</span><code>GateActivity</code></li>
+          <li><b>Outcome</b><span>What you chose is logged and sent back to JS for stats.</span><code>EventLog</code></li>
+        </ol>
+        <figcaption id="pipe-cap">What happens between tapping an app icon and seeing the app.</figcaption>
+      </figure>
+
+      <div class="engine">
+        <div class="engine-try">
+          <h3 class="h3">Try the decision engine</h3>
+          <p>Pick a situation. The checks run in the same order as <code>PolicyEngine.decide()</code>.</p>
+          <div class="cases" role="radiogroup" aria-label="Situation" data-cases>
+            <button type="button" role="radio" aria-checked="false" data-case="focus">Instagram during focus hours</button>
+            <button type="button" role="radio" aria-checked="false" data-case="plain">Opening the calculator</button>
+            <button type="button" role="radio" aria-checked="false" data-case="first">Instagram, first open</button>
+            <button type="button" role="radio" aria-checked="false" data-case="grace">Back to Instagram after 3 seconds</button>
+            <button type="button" role="radio" aria-checked="false" data-case="stale">Back to Instagram after an hour</button>
+            <button type="button" role="radio" aria-checked="false" data-case="used">Your 10 minutes are up</button>
+          </div>
+
+          <ol class="checks" data-checks aria-live="polite">
+            <li data-check="block">Is it blocked by a limit or focus hours?</li>
+            <li data-check="guarded">Is the pause on for this app?</li>
+            <li data-check="session">Is there a session from earlier?</li>
+            <li data-check="stale">Did you leave more than the grace window ago?</li>
+            <li data-check="exhausted">Is the time you asked for used up?</li>
+          </ol>
+          <p class="result" data-result><span class="chip">Pick a situation</span><span data-result-text></span></p>
+        </div>
+
+        <pre class="code" aria-label="PolicyEngine.kt"><code data-code><span class="c">// PolicyEngine.kt: no Android, no I/O. Order matters.</span>
+<span class="k">fun</span> <span class="f">decide</span>(
+    pkg: <span class="t">String</span>, config: <span class="t">GuardConfig</span>,
+    session: <span class="t">Session</span>?, now: <span class="t">Long</span>,
+): <span class="t">Decision</span> {
+<span class="ln" data-line="block">    config.blockRuleFor(pkg, now)
+        ?.let { <span class="k">return</span> Decision.Block(pkg, it) }</span>
+
+<span class="ln" data-line="guarded">    <span class="k">if</span> (config.interventionRuleFor(pkg, now) == <span class="k">null</span>)
+        <span class="k">return</span> Decision.Allow(NOT_GUARDED)</span>
+
+<span class="ln" data-line="session">    <span class="k">if</span> (session == <span class="k">null</span>) <span class="k">return</span> Decision.Gate(pkg)</span>
+
+    <span class="k">val</span> graceMs = maxOf(config.gate.graceSeconds * <span class="n">1000L</span>, MIN_GRACE_MS)
+<span class="ln" data-line="stale">    <span class="k">if</span> (!session.isOpen &amp;&amp; now - session.leftAt &gt; graceMs)
+        <span class="k">return</span> Decision.Gate(pkg)</span>
+
+<span class="ln" data-line="exhausted">    <span class="k">if</span> (session.isExhausted) <span class="k">return</span> Decision.Shield(pkg)</span>
+
+<span class="ln" data-line="allow">    <span class="k">return</span> Decision.Allow(
+        <span class="k">if</span> (session.isOpen) ACTIVE_SESSION <span class="k">else</span> WITHIN_GRACE)</span>
+}</code></pre>
+      </div>
+
+      <dl class="stack">
+        <div><dt>Screens</dt><dd>React Native 0.83 and TypeScript, React Navigation, SVG charts, a small motion kit for entrances and presses.</dd></div>
+        <div><dt>Native Android</dt><dd>Kotlin AccessibilityService, Jetpack Compose for the pause screen, UsageStatsManager for screen time, background fetch.</dd></div>
+        <div><dt>Bridge</dt><dd>Typed native modules. JS pushes the rules to Kotlin on every change and drains outcome events back, so the pause works even when the JS side is asleep.</dd></div>
+        <div><dt>Backend</dt><dd>Node and Express on Vercel, Supabase for accounts and data, Gemini through LangChain for the coach.</dd></div>
+        <div><dt>Tests</dt><dd>33 JVM unit tests on the decision engine, the app-switch filter, the pause content and the screen-time math.</dd></div>
+        <div><dt>Privacy</dt><dd>The accessibility service only listens for window changes and has <code>canRetrieveWindowContent="false"</code>. It can't read anything on your screen.</dd></div>
+      </dl>
+    </section>
+
+    <!-- Download -->
+    <section class="download" id="download" aria-labelledby="dl-title">
+      <div class="dl-main">
+        <h2 id="dl-title" class="display display-sm">Try it on your phone.</h2>
+        <p>Version 1.0, for Android 7 and up.</p>
+        <div class="actions">
+          <a class="btn btn-ink" data-apk href="#">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            Download the APK
+          </a>
+          <a class="btn btn-line" data-github href="#">View the code on GitHub</a>
+        </div>
+        <div class="qr">
+          <div class="qr-code" data-qr role="img" aria-label="QR code for the APK download"></div>
+          <p>On a computer? Scan this with your phone's camera to download it there.</p>
+        </div>
+      </div>
+
+      <div class="dl-side">
+        <h3 class="h3">Installing</h3>
+        <ol class="install">
+          <li>Download the APK on your Android phone and open it.</li>
+          <li>If Android asks, allow your browser to install apps.</li>
+          <li>Open Rethink and give it <b>Usage access</b> so it can show your screen time.</li>
+          <li>To use the pause, turn on the <b>Rethink</b> accessibility service when the app asks.</li>
+        </ol>
+
+        <h3 class="h3">Why it asks for these</h3>
+        <dl class="perms">
+          <dt>Usage access</dt>
+          <dd>Reads how long each app was open and how often. This feeds the dial, the weekly views and the coach.</dd>
+          <dt>Accessibility service</dt>
+          <dd>Tells Rethink which app just came to the front, so the pause can appear before it. It can't see or read what's on screen.</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <a class="wordmark" href="#top">rethink<span class="dot">.</span></a>
+    <p>Made by Rahul Kumar.</p>
+    <nav aria-label="Links">
+      <a data-github href="#">GitHub</a>
+      <button type="button" class="link" data-open-demo>Demo video</button>
+      <a href="#download">Download</a>
+    </nav>
+  </footer>
+
+  <dialog class="demo" data-demo aria-label="Rethink demo video">
+    <form method="dialog"><button class="close" aria-label="Close video">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button></form>
+    <video controls playsinline preload="none" poster="assets/clips/demo-poster.webp" src="assets/clips/demo.mp4"></video>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+  <script src="main.js" defer></script>
+</body>
+</html>
