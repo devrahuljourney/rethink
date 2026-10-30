@@ -29,19 +29,19 @@ export default function BottomTabNav() {
       <Tab.Screen name="HomeStack" component={HomeStack} />
       <Tab.Screen
         name="CoachStack"
-        component={true ? CoachStack : AuthNavigator}
+        component={isAuthenticated ? CoachStack : AuthNavigator}
       />
       <Tab.Screen
         name="AppStack"
-        component={true ? AppStack : AuthNavigator}
+        component={isAuthenticated ? AppStack : AuthNavigator}
       />
       <Tab.Screen
         name="FocusStack"
-        component={true ? FocusStack : AuthNavigator}
+        component={isAuthenticated ? FocusStack : AuthNavigator}
       />
       <Tab.Screen
         name="SettingStack"
-        component={true ? SettingStack : AuthNavigator}
+        component={isAuthenticated ? SettingStack : AuthNavigator}
       />
     </Tab.Navigator>
   )

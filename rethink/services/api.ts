@@ -1,7 +1,7 @@
 import Config from 'react-native-config';
 
 const API_VERSION = '/api/v1';
-const IP_ADDRESS = "localhost:4000"
+const IP_ADDRESS = "192.168.1.16:4000"
 // export const BASE_URL = `${Config.BASE_URL}${API_VERSION}`;
 export const BASE_URL = `http://${IP_ADDRESS}${API_VERSION}`;
 

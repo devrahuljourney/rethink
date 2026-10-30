@@ -88,13 +88,12 @@ export default function Setting() {
             setLoading(true);
             try {
               await logoutAPI();
-              setIsAuthenticated(false);
-              await checkAuth();
             } catch (error) {
-              console.error(error);
-              Alert.alert("Still logged in", "Something went wrong logging out. Try again.");
+              // An expired session can't be logged out server-side; the local token is already cleared
+              console.log('Logout request failed, signing out locally:', error);
             } finally {
               setLoading(false);
+              setIsAuthenticated(false);
             }
           }
         }
